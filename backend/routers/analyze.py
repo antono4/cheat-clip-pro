@@ -36,6 +36,10 @@ from backend.services.gdrive_service import (
     download_google_drive_video,
     is_google_drive_url,
 )
+from backend.services.system_service import (
+    is_server_environment,
+    is_update_allowed,
+)
 from backend.services.youtube_service import (
     fetch_transcript,
     fetch_video_metadata,
@@ -193,6 +197,8 @@ def health_check(refresh: bool = False):
         "status": "ok",
         "message": "CHEAT CLIP PRO API is active",
         "is_vercel": is_vercel,
+        "is_server": is_server_environment(),
+        "allow_app_updates": is_update_allowed(),
         "proxy_configured": bool(proxy),
         "gemini_env_configured": has_gemini,
         "supadata_keys_count": len(keys),

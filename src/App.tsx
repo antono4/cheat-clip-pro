@@ -47,6 +47,13 @@ export default function App() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isCookiesModalOpen, setIsCookiesModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [allowAppUpdates, setAllowAppUpdates] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      return host === 'localhost' || host === '127.0.0.1';
+    }
+    return false;
+  });
   const [hasCookies, setHasCookies] = useState(false);
   const [isDownloadingRaw, setIsDownloadingRaw] = useState(false);
   const [rawDownloadProgress, setRawDownloadProgress] = useState<{
@@ -164,6 +171,23 @@ export default function App() {
     return () => {
       window.removeEventListener('focus', checkCookies);
     };
+  }, []);
+
+  // Query server update permissions (disabled on remote VPS/Docker for security)
+  useEffect(() => {
+    fetch('/api/system/version')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.allow_update === 'boolean') {
+          setAllowAppUpdates(data.allow_update);
+        } else if (data && data.is_server) {
+          setAllowAppUpdates(false);
+        }
+      })
+      .catch(() => {
+        const host = window.location.hostname;
+        setAllowAppUpdates(host === 'localhost' || host === '127.0.0.1');
+      });
   }, []);
 
   // Results
@@ -2147,28 +2171,30 @@ Transcript:
           >
             <span>🧹 {isClearingGlobalTemp ? t.header.clearingTempBtn : t.header.clearTempBtn}</span>
           </button>
-          <button
-            type="button"
-            className="cookie-header-btn"
-            onClick={() => setIsUpdateModalOpen(true)}
-            style={{
-              padding: '0.45rem 0.85rem',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            title={t.header.updateBtnTooltip}
-          >
-            <span>🔄 {t.header.updateBtn}</span>
-          </button>
+          {allowAppUpdates && (
+            <button
+              type="button"
+              className="cookie-header-btn"
+              onClick={() => setIsUpdateModalOpen(true)}
+              style={{
+                padding: '0.45rem 0.85rem',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title={t.header.updateBtnTooltip}
+            >
+              <span>🔄 {t.header.updateBtn}</span>
+            </button>
+          )}
           <LanguageSwitcher />
           <a
             href="https://tako.id/johansa"

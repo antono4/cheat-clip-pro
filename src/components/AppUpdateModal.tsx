@@ -13,6 +13,8 @@ export interface VersionInfo {
   remote_commit?: string;
   changelog?: Array<{ hash: string; message: string; date: string }>;
   error?: string;
+  is_server?: boolean;
+  allow_update?: boolean;
 }
 
 interface AppUpdateModalProps {
@@ -421,6 +423,29 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                     {t.updateModal.checkingUpdate}
                   </span>
                 </div>
+              ) : info?.allow_update === false ? (
+                /* Server Deployment Notice */
+                <div
+                  style={{
+                    background: 'rgba(59, 130, 246, 0.08)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    borderRadius: '12px',
+                    padding: '1.1rem',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.8rem',
+                  }}
+                >
+                  <span style={{ fontSize: '1.3rem' }}>🛡️</span>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.88rem', color: '#60a5fa', fontWeight: 600 }}>
+                      Server / Production Deployment
+                    </h4>
+                    <p style={{ margin: '5px 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                      Self-update and server restarts via the Web UI are disabled on remote servers for security. Please deploy updates through your container orchestrator (e.g. Dokploy / Docker / Git push).
+                    </p>
+                  </div>
+                </div>
               ) : info?.update_available ? (
                 <div
                   style={{
@@ -520,7 +545,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                       <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#34d399', fontWeight: 600 }}>
                         {t.updateModal.upToDateTitle}
                       </h4>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                         {t.updateModal.upToDateDesc}
                       </p>
                     </div>
@@ -572,30 +597,32 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
               padding: '1rem 1.5rem',
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent: info?.allow_update === false ? 'flex-end' : 'space-between',
               alignItems: 'center',
               background: 'rgba(255, 255, 255, 0.01)',
             }}
           >
-            <button
-              onClick={handleDirectRestart}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '8px',
-                padding: '0.45rem 0.85rem',
-                fontSize: '0.78rem',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.15s ease',
-              }}
-              title="Restart backend and frontend dev server"
-            >
-              <span>🔄 {t.updateModal.restartBtn}</span>
-            </button>
+            {info?.allow_update !== false && (
+              <button
+                onClick={handleDirectRestart}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  padding: '0.45rem 0.85rem',
+                  fontSize: '0.78rem',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  transition: 'all 0.15s ease',
+                }}
+                title="Restart backend and frontend dev server"
+              >
+                <span>🔄 {t.updateModal.restartBtn}</span>
+              </button>
+            )}
 
             <button
               onClick={onClose}

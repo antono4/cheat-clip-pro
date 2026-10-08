@@ -296,6 +296,34 @@ def run_git_command(args: List[str], cwd: Optional[Path] = None, timeout: int = 
         return -1, "", str(e)
 
 
+def is_server_environment() -> bool:
+    """
+    Detects if the application is running in a server/production/containerized environment:
+    - Docker container (/.dockerenv, DOCKER_CONTAINER=true, DOKPLOY, etc.)
+    - Cloud hosting (VERCEL, RENDER, FLY_ALLOC_ID, RAILWAY_ENVIRONMENT, etc.)
+    - Explicit SERVER_MODE=true or ENVIRONMENT=production
+    """
+    if os.environ.get("SERVER_MODE", "").lower() in ("1", "true", "yes"):
+        return True
+    if os.environ.get("ENVIRONMENT", "").lower() == "production" or os.environ.get("NODE_ENV", "").lower() == "production":
+        return True
+    if os.path.exists("/.dockerenv") or os.environ.get("DOCKER_CONTAINER", "").lower() in ("1", "true", "yes"):
+        return True
+    if any(os.environ.get(k) for k in ("DOKPLOY", "VERCEL", "RENDER", "FLY_ALLOC_ID", "RAILWAY_ENVIRONMENT", "AWS_LAMBDA_FUNCTION_NAME")):
+        return True
+    return False
+
+
+def is_update_allowed() -> bool:
+    """
+    App self-update and server restarts via Web UI are ONLY allowed in local desktop environments.
+    In server environments (Docker / Dokploy / Cloud VPS), updates must be handled via orchestrator / git deployment.
+    """
+    if os.environ.get("ALLOW_SERVER_UPDATE", "").lower() in ("1", "true", "yes"):
+        return True
+    return not is_server_environment()
+
+
 def get_current_git_info() -> dict:
     """Retrieves current commit, branch, and remote URL information."""
     root_dir = Path(_base_dir).parent
@@ -315,13 +343,18 @@ def get_current_git_info() -> dict:
             commit_msg = parts[2]
             commit_date = parts[3]
 
+    is_server = is_server_environment()
+    allow_update = is_update_allowed()
+
     return {
         "current_commit": commit_hash,
         "current_commit_full": commit_full,
         "commit_message": commit_msg,
         "commit_date": commit_date,
         "branch": branch if rc_branch == 0 and branch else "master",
-        "remote_url": remote_url if rc_remote == 0 and remote_url else "https://github.com/galihjuansaputra/cheat-clip-pro.git"
+        "remote_url": remote_url if rc_remote == 0 and remote_url else "https://github.com/galihjuansaputra/cheat-clip-pro.git",
+        "is_server": is_server,
+        "allow_update": allow_update
     }
 
 

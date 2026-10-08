@@ -14,6 +14,8 @@ from backend.services.system_service import (
     clear_temp_files,
     get_current_git_info,
     get_temp_storage_summary,
+    is_server_environment,
+    is_update_allowed,
     run_git_command,
     trigger_detached_restart,
 )
@@ -80,15 +82,26 @@ async def api_trigger_auto_cleanup(
 
 @router.get("/api/system/version")
 def api_system_version():
-    """Returns local git version information."""
+    """Returns local git version and environment update permission information."""
     return get_current_git_info()
 
 
 @router.get("/api/system/check-update")
 def api_check_update():
-    """Fetches origin and checks if updates are available."""
-    root_dir = Path(_base_dir).parent
+    """Fetches origin and checks if updates are available. Disabled in server environments for security."""
     info = get_current_git_info()
+    if not is_update_allowed():
+        return {
+            **info,
+            "update_available": False,
+            "behind_count": 0,
+            "changelog": [],
+            "is_server": True,
+            "allow_update": False,
+            "message": "Self-update is disabled in server / Docker environment for security. Please update through your orchestrator (e.g. Dokploy / Git)."
+        }
+
+    root_dir = Path(_base_dir).parent
     branch = info.get("branch", "master") or "master"
 
     # Fetch origin
@@ -130,6 +143,12 @@ def api_check_update():
 @router.post("/api/system/update")
 async def api_perform_update(authorized: bool = Depends(verify_admin_access)):
     """Pulls latest code, syncs dependencies if modified, and triggers background restart."""
+    if not is_update_allowed():
+        raise HTTPException(
+            status_code=403,
+            detail="System self-update via Web UI is disabled in server / Docker environment for security. Please update through your server orchestrator (e.g. Dokploy / Git pull)."
+        )
+
     root_dir = Path(_base_dir).parent
     info = get_current_git_info()
     branch = info.get("branch", "master") or "master"
@@ -208,7 +227,12 @@ async def api_perform_update(authorized: bool = Depends(verify_admin_access)):
 
 @router.post("/api/system/restart")
 async def api_restart_app(authorized: bool = Depends(verify_admin_access)):
-    """Triggers an immediate background restart without pulling code."""
+    """Triggers an immediate background restart without pulling code. Disabled in server environments for security."""
+    if not is_update_allowed():
+        raise HTTPException(
+            status_code=403,
+            detail="Server restarts via Web UI are disabled in server / Docker environment for security."
+        )
     trigger_detached_restart(delay=2.5)
     return {
         "success": True,
