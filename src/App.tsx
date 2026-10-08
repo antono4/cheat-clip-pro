@@ -8,6 +8,7 @@ import { AppUpdateModal } from './components/AppUpdateModal';
 import { resilientFetch } from './utils/api';
 import { getStoredCookies, hasStoredCookies } from './utils/cookieUtils';
 import { extractAudioFromVideoClient } from './utils/audioExtractor';
+import { renderClipClientSide, triggerBrowserDownload } from './services/clientRenderer';
 import { useLanguage } from './locales';
 import type { AnalyzeResponse, ViralClip, RenderSettings, BatchRenderProgress } from './types';
 
@@ -284,6 +285,167 @@ export default function App() {
   const handleStartBatchRender = async (settings: RenderSettings) => {
     if (!result) return;
     setIsLaunchingRender(true);
+
+    const isClientMode = settings.hardwareAccel === 'browser_wasm' || settings.renderEngine === 'client';
+
+    if (isClientMode) {
+      try {
+        const batchId = `client_${Date.now()}`;
+        const selectedClips = settings.selectedClips;
+
+        setBatchProgress({
+          batch_id: batchId,
+          total_clips: selectedClips.length,
+          current_clip_index: 0,
+          overall_status: 'running',
+          clips: selectedClips.map((c, i) => {
+            const base = (c.title_suggestion || c.title || `Clip #${i + 1}`).trim();
+            const pfx = settings.titlePrefix || '';
+            const sfx = settings.titleSuffix || '';
+            const fullTitle = (pfx || sfx) ? `${pfx}${base}${sfx}`.trim() : base;
+            return {
+              clip_index: i,
+              title: fullTitle,
+              base_title: base,
+              status: i === 0 ? 'rendering' : 'pending',
+              progress_percent: 0,
+            };
+          })
+        });
+
+        setIsLaunchingRender(false);
+
+        for (let i = 0; i < selectedClips.length; i++) {
+          const clip = selectedClips[i];
+          const base = (clip.title_suggestion || clip.title || `Clip #${i + 1}`).trim();
+          const pfx = (settings.fileNamePrefix || '').replace(/[\\/*?:"<>|]/g, '');
+          const sfx = (settings.fileNameSuffix || '').replace(/[\\/*?:"<>|]/g, '');
+          const cleanBase = base.replace(/[\\/*?:"<>|]/g, '').trim();
+          const filename = `${pfx}${cleanBase}${sfx}`.trim() || `clip_${i + 1}`;
+
+          setBatchProgress(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              current_clip_index: i,
+              clips: prev.clips.map((c, idx) => idx === i ? { ...c, status: 'downloading', progress_percent: 5 } : c)
+            };
+          });
+
+          // Step 1: Acquire raw video stream (0% server load, stream proxy / local blob)
+          let rawSourceUrl = '';
+          if (sourceMode === 'upload' && uploadedVideoFile) {
+            rawSourceUrl = URL.createObjectURL(uploadedVideoFile);
+          } else if (result.source_type === 'upload' || result.video_id?.startsWith('upload_') || result.video_id?.startsWith('gdrive_')) {
+            rawSourceUrl = `/api/video/${result.video_id}`;
+          } else {
+            const userCookies = getStoredCookies();
+            const targetUrl = result.video_url || (url.trim() ? url.trim() : `https://www.youtube.com/watch?v=${result.video_id}`);
+            const rawReq = await fetch('/api/download-raw-clip', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                video_url: targetUrl,
+                video_id: result.video_id,
+                start_time: clip.start_time,
+                end_time: clip.end_time,
+                title: clip.title,
+                cookies: userCookies || undefined,
+              })
+            });
+            if (!rawReq.ok) {
+              const err = await rawReq.json().catch(() => ({}));
+              throw new Error(err.detail || 'Failed to request raw clip stream');
+            }
+            const rawData = await rawReq.json();
+            const jobId = rawData.job_id;
+
+            rawSourceUrl = await new Promise<string>((resolve, reject) => {
+              const pollInterval = setInterval(async () => {
+                try {
+                  const statusRes = await fetch(`/api/download-raw-clip-status/${jobId}`);
+                  if (!statusRes.ok) {
+                    clearInterval(pollInterval);
+                    reject(new Error('Failed to retrieve raw stream status'));
+                    return;
+                  }
+                  const statusData = await statusRes.json();
+                  if (statusData.status === 'ready' && statusData.download_url) {
+                    clearInterval(pollInterval);
+                    resolve(statusData.download_url);
+                  } else if (statusData.status === 'failed') {
+                    clearInterval(pollInterval);
+                    reject(new Error(statusData.error || 'Failed to acquire raw clip segment'));
+                  }
+                } catch (e) {
+                  clearInterval(pollInterval);
+                  reject(e);
+                }
+              }, 600);
+            });
+          }
+
+          // Step 2: Render in client browser via WASM
+          const blob = await renderClipClientSide({
+            videoSourceUrl: rawSourceUrl,
+            startTime: (sourceMode === 'upload' && uploadedVideoFile) ? clip.start_time : undefined,
+            endTime: (sourceMode === 'upload' && uploadedVideoFile) ? clip.end_time : undefined,
+            aspectRatio: settings.aspectRatio as any,
+            backgroundStyle: settings.backgroundStyle as any,
+            titleText: settings.titleText,
+            fileName: `${filename}.mp4`,
+            onProgress: (pct, stage) => {
+              setBatchProgress(prev => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  clips: prev.clips.map((c, idx) => idx === i ? {
+                    ...c,
+                    status: 'rendering',
+                    progress_percent: pct,
+                    error_message: stage
+                  } : c)
+                };
+              });
+            }
+          });
+
+          // Step 3: Trigger automatic download and update status
+          const downloadBlobUrl = URL.createObjectURL(blob);
+          triggerBrowserDownload(blob, `${filename}.mp4`);
+
+          setBatchProgress(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              clips: prev.clips.map((c, idx) => idx === i ? {
+                ...c,
+                status: 'completed',
+                progress_percent: 100,
+                download_url: downloadBlobUrl
+              } : c)
+            };
+          });
+        }
+
+        setBatchProgress(prev => prev ? { ...prev, overall_status: 'completed' } : null);
+        return;
+      } catch (clientErr: any) {
+        console.error('Client rendering failed:', clientErr);
+        setBatchProgress(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            overall_status: 'error',
+            error_message: clientErr.message || 'Client-side rendering error'
+          };
+        });
+        return;
+      } finally {
+        setIsLaunchingRender(false);
+      }
+    }
+
     try {
       const userCookies = getStoredCookies();
       const resp = await fetch('/api/render-batch', {
@@ -4579,6 +4741,7 @@ Transcript:
             setBatchProgress(null);
           }}
           onRetryClip={handleRetryBatchClip}
+          allowAppUpdates={allowAppUpdates}
         />
       )}
 

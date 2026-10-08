@@ -34,6 +34,7 @@ interface ClipStudioSectionProps {
   batchProgress?: BatchRenderProgress | null;
   onDismissProgress?: () => void;
   onRetryClip?: (clipIndex?: number) => void;
+  allowAppUpdates?: boolean;
 }
 
 function getFriendlyErrorMessage(rawMsg: string): string {
@@ -264,6 +265,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
   batchProgress,
   onDismissProgress,
   onRetryClip,
+  allowAppUpdates = false,
 }) => {
   const { t } = useLanguage();
   // Directly reflect marked clips (supports selecting 0 clips)
@@ -1557,6 +1559,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
       originalAudioVolume,
       // Hardware Acceleration / Video Encoder
       hardwareAccel,
+      renderEngine: hardwareAccel === 'browser_wasm' ? 'client' : 'server',
       // Multi-Segment Merged Highlight Video
       renderMode,
       compilationTitle: compilationTitle.trim() || undefined,
@@ -4241,6 +4244,9 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                       onChange={(e) => setHardwareAccel(e.target.value as HardwareAccelOption)}
                       title={t.studio.hwChangeHint}
                     >
+                      <option value="browser_wasm">
+                        🌐 Browser Engine (Client-Side WASM · 0% Server CPU)
+                      </option>
                       <option value="auto">
                         Auto ({hardwareInfo?.recommended ? hardwareInfo.recommended.toUpperCase() : 'NVENC'})
                       </option>
@@ -4662,30 +4668,34 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
             <span className="meta-badge">
               {t.studio.readyToRenderMeta(selectedClips.length)}
             </span>
-            <button
-              type="button"
-              className="studio-clear-temp-btn"
-              title={t.studio.clearTempTooltip}
-              onClick={handleClearTempClick}
-              disabled={isClearingTemp}
-              style={{
-                background: 'rgba(255, 255, 255, 0.07)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: 'var(--text-secondary)',
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                padding: '0.2rem 0.55rem',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              {isClearingTemp ? t.studio.clearingTempBtn : t.studio.clearTempBtn}
-            </button>
-            {tempClearMsg && (
-              <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: 600 }}>
-                {tempClearMsg}
-              </span>
+            {allowAppUpdates && (
+              <>
+                <button
+                  type="button"
+                  className="studio-clear-temp-btn"
+                  title={t.studio.clearTempTooltip}
+                  onClick={handleClearTempClick}
+                  disabled={isClearingTemp}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.07)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {isClearingTemp ? t.studio.clearingTempBtn : t.studio.clearTempBtn}
+                </button>
+                {tempClearMsg && (
+                  <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: 600 }}>
+                    {tempClearMsg}
+                  </span>
+                )}
+              </>
             )}
           </div>
           <span className="meta-sub">

@@ -65,7 +65,7 @@ export type StreamerPreset = 'none' | 'split_top_cam' | 'pip_corner';
 export type FacecamPosition = 'auto' | 'bottom_right' | 'top_right' | 'bottom_left' | 'top_left' | 'center' | 'left' | 'right';
 export type FontSizeOption = 'small' | 'medium' | 'big' | 'custom';
 export type TextCaseOption = 'uppercase' | 'capitalize' | 'lowercase';
-export type HardwareAccelOption = 'auto' | 'nvenc' | 'amf' | 'qsv' | 'cpu';
+export type HardwareAccelOption = 'auto' | 'nvenc' | 'amf' | 'qsv' | 'cpu' | 'browser_wasm';
 
 export interface FontItem {
   name: string;
@@ -94,6 +94,7 @@ export interface HardwareAccelInfo {
 }
 
 export interface RenderSettings {
+  renderEngine?: 'server' | 'client';
   aspectRatio: AspectRatioOption;
   backgroundStyle: BackgroundStyle;
   enableFaceTracking: boolean;
