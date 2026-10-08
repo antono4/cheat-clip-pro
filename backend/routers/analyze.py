@@ -711,7 +711,7 @@ async def analyze_video(request: AnalyzeRequest):
             eng = f"|{line['engagement']:.2f}" if heatmap and line['engagement'] > 0 else ""
             transcript_dump.append(f"{line['start']:.1f}|{line['end']:.1f}{eng} {line['text']}")
 
-        MAX_LINES = 8000 if is_long_video else 4000
+        MAX_LINES = 3500 if is_long_video else 2000
         if len(transcript_dump) > MAX_LINES:
             logger.warning(f"Transcript {len(transcript_dump)} lines — truncating to {MAX_LINES}.")
             transcript_dump = transcript_dump[:MAX_LINES]
@@ -808,14 +808,12 @@ async def analyze_video(request: AnalyzeRequest):
         })
 
         # ── Step 4: Gemini API call with dynamic Flash fallback models and retry ───────────
-        client = genai.Client(api_key=gemini_key)
+        client = genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=45000))
         
         # Discover all available Flash models for the user's API key
         discovered_flash = await asyncio.to_thread(get_flash_models_for_key, client)
         
-        # Build models_to_try:
-        # 1. Start with the requested model
-        # 2. Append all discovered and known flash models in version descending order (e.g. 3.7, 3.6, 3.5, 2.5, 2.0, 1.5)
+        # Build models_to_try (capped at top 4 to prevent prolonged delays):
         models_to_try = [requested_model]
         for fm in discovered_flash:
             if fm not in models_to_try:
@@ -824,6 +822,7 @@ async def analyze_video(request: AnalyzeRequest):
             if km not in models_to_try:
                 models_to_try.append(km)
 
+        models_to_try = models_to_try[:4]
         logger.info(f"Flash fallback chain prepared: {models_to_try}")
 
         response = None
@@ -834,7 +833,8 @@ async def analyze_video(request: AnalyzeRequest):
 
         for idx, model_name in enumerate(models_to_try):
             next_model_hint = models_to_try[idx + 1] if idx + 1 < len(models_to_try) else None
-            MAX_RETRIES = 2
+            MAX_RETRIES = 1
+            MODEL_TIMEOUT_SEC = 50.0  # Hard timeout to prevent infinite stuck inference
             
             for attempt in range(MAX_RETRIES):
                 if attempt > 0:
@@ -855,12 +855,12 @@ async def analyze_video(request: AnalyzeRequest):
                     "step_progress": 18,
                     "overall_progress": 74,
                     "stage": "Neural Model Dispatch",
-                    "detail": f"Dispatched {len(transcript_dump)} lines to {model_name} (attempt {attempt + 1})...",
+                    "detail": f"Dispatched {len(transcript_dump)} lines to {model_name}...",
                     "model": model_name,
                     "message": f"Calling {model_name} (attempt {attempt + 1}/{MAX_RETRIES})..."
                 })
                 
-                # Execute Gemini call with heartbeat to keep mobile connection alive and show live stages
+                # Execute Gemini call with heartbeat and strict timeout
                 task = asyncio.create_task(asyncio.to_thread(
                     client.models.generate_content,
                     model=model_name,
@@ -869,15 +869,22 @@ async def analyze_video(request: AnalyzeRequest):
                         response_mime_type="application/json",
                         response_schema=VideoAnalysis,
                         temperature=0.2,
-                        max_output_tokens=65536 if any(v in model_name for v in ['2.0', '2.5', '3.']) else 8192,
+                        max_output_tokens=8192,
                     )
                 ))
                 
                 call_start = asyncio.get_event_loop().time()
+                timed_out = False
                 while not task.done():
-                    done, _ = await asyncio.wait([task], timeout=2.0)
+                    done, _ = await asyncio.wait([task], timeout=1.5)
                     if not done:
                         elapsed = int(asyncio.get_event_loop().time() - call_start)
+                        if elapsed >= MODEL_TIMEOUT_SEC:
+                            logger.warning(f"Model {model_name} exceeded {MODEL_TIMEOUT_SEC}s timeout. Cancelling task to fallback...")
+                            task.cancel()
+                            timed_out = True
+                            last_error = TimeoutError(f"{model_name} inference timed out after {MODEL_TIMEOUT_SEC}s")
+                            break
                         
                         if elapsed < 5:
                             stage = "Neural Context Loading"
@@ -917,6 +924,9 @@ async def analyze_video(request: AnalyzeRequest):
                             "elapsed": elapsed,
                             "message": f"[{model_name} | {elapsed}s] {stage}: {detail}"
                         })
+                
+                if timed_out:
+                    break
                 
                 try:
                     resp_candidate = await task

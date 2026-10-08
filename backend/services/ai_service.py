@@ -64,9 +64,10 @@ def get_flash_models_for_key(client: genai.Client) -> List[str]:
 
     # Combine discovered with known flash models, preserving uniqueness
     combined_pool = list(dict.fromkeys(discovered + KNOWN_FLASH_MODELS))
-    # Sort descending so newest versions (3.7, 3.6, 3.5, 2.5, 2.0, 1.5) are prioritized
+    # Sort descending so newest versions (e.g. 2.5, 2.0, 1.5) are prioritized
     ordered = sorted(combined_pool, key=parse_gemini_model_sort_key, reverse=True)
-    return ordered
+    # Cap to top 4 distinct models to prevent excessive fallback cycles
+    return ordered[:4]
 
 
 def list_available_gemini_models(api_key: str = "") -> List[str]:
