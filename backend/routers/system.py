@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 
 from backend.config import _base_dir, logger
 from backend.services.system_service import (
+    auto_cleanup_expired_files,
     cleanup_expired_temp_files,
     clear_temp_files,
     get_current_git_info,
@@ -59,9 +60,22 @@ async def clear_temp_folder(authorized: bool = Depends(verify_admin_access)):
 
 
 @router.post("/api/cleanup-expired-temp")
-async def cleanup_expired_temp(max_age_hours: int = 48, authorized: bool = Depends(verify_admin_access)):
+async def cleanup_expired_temp(max_age_hours: int = 1, authorized: bool = Depends(verify_admin_access)):
     """Deletes temporary frame images and slices older than max_age_hours."""
     return cleanup_expired_temp_files(max_age_hours=max_age_hours)
+
+
+@router.post("/api/auto-cleanup")
+async def api_trigger_auto_cleanup(
+    max_age_seconds: int = 3600,
+    max_storage_gb: float = 5.0,
+    authorized: bool = Depends(verify_admin_access)
+):
+    """Manually triggers dual-mode auto-cleanup (Option 1: TTL + Option 2: Quota)."""
+    return auto_cleanup_expired_files(
+        max_age_seconds=max_age_seconds,
+        max_storage_bytes=int(max_storage_gb * 1024 * 1024 * 1024)
+    )
 
 
 @router.get("/api/system/version")

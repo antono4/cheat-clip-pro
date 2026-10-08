@@ -115,39 +115,151 @@ def clear_temp_files() -> dict:
     }
 
 
+def is_protected_system_file(p: Path) -> bool:
+    """Checks whether a given file/dir is protected (cookies, fonts, etc.)."""
+    PROTECTED_COOKIE_NAMES = {"cookies.txt", ".cookies", "youtube_cookies.txt", "cookie.txt"}
+    if p.name.lower() in PROTECTED_COOKIE_NAMES:
+        return True
+    try:
+        if COOKIES_PATH.exists() and p.resolve() == COOKIES_PATH.resolve():
+            return True
+    except Exception:
+        pass
+    try:
+        if ROOT_COOKIES_PATH.exists() and p.resolve() == ROOT_COOKIES_PATH.resolve():
+            return True
+    except Exception:
+        pass
+    try:
+        from backend.config import FONTS_DIR
+        if FONTS_DIR.exists() and (p.resolve() == FONTS_DIR.resolve() or FONTS_DIR.resolve() in p.resolve().parents):
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def cleanup_expired_temp_files(max_age_hours: int = 48) -> dict:
     """
     Cleans up temporary video frames, audio slices, and ASS files that are older than max_age_hours.
     Strictly preserves cookies.txt and active files.
     """
+    return auto_cleanup_expired_files(max_age_seconds=max_age_hours * 3600)
+
+
+def auto_cleanup_expired_files(
+    max_age_seconds: int = 3600,
+    max_storage_bytes: int = 5 * 1024 * 1024 * 1024,
+    target_reduction_ratio: float = 0.8
+) -> dict:
+    """
+    Automated dual-mode cleanup engine:
+    1. Option 1 (Time-based TTL): Deletes temp/export/upload files older than max_age_seconds (default 1 hour).
+    2. Option 2 (Storage Quota Ceiling): If total storage exceeds max_storage_bytes (default 5 GB),
+       purges oldest files first (FIFO by mtime) down to target_reduction_ratio (default 80% = 4 GB).
+    Strictly preserves cookies and custom fonts.
+    """
     import time
     base_dir = Path(_base_dir)
-    cutoff_time = time.time() - (max_age_hours * 3600)
-    cleaned_count = 0
-    cleaned_bytes = 0
+    from backend.config import EXPORTS_DIR, TEMP_DIR, UPLOADS_DIR
 
-    PROTECTED_COOKIE_NAMES = {"cookies.txt", ".cookies", "youtube_cookies.txt", "cookie.txt"}
+    target_dirs = [TEMP_DIR, base_dir / "temp", UPLOADS_DIR, EXPORTS_DIR]
+    now = time.time()
+    cutoff_time = now - max_age_seconds
 
-    for target in [TEMP_DIR, base_dir / "temp"]:
+    ttl_deleted_files = 0
+    ttl_deleted_bytes = 0
+    quota_deleted_files = 0
+    quota_deleted_bytes = 0
+
+    # Pass 1: Time-based TTL cleanup (Option 1)
+    for target in target_dirs:
         if not target.exists() or not target.is_dir():
             continue
         for item in list(target.rglob("*")):
-            if item.is_file() and item.name.lower() not in PROTECTED_COOKIE_NAMES:
+            if item.is_file() and not is_protected_system_file(item):
                 try:
                     mtime = item.stat().st_mtime
                     if mtime < cutoff_time:
                         sz = item.stat().st_size
                         item.unlink()
-                        cleaned_count += 1
-                        cleaned_bytes += sz
+                        ttl_deleted_files += 1
+                        ttl_deleted_bytes += sz
                 except Exception:
                     pass
 
+    # Pass 2: Storage Quota Ceiling check (Option 2)
+    current_files = []
+    total_current_bytes = 0
+
+    for target in target_dirs:
+        if not target.exists() or not target.is_dir():
+            continue
+        for item in list(target.rglob("*")):
+            if item.is_file() and not is_protected_system_file(item):
+                try:
+                    stat = item.stat()
+                    total_current_bytes += stat.st_size
+                    current_files.append((stat.st_mtime, stat.st_size, item))
+                except Exception:
+                    pass
+
+    if total_current_bytes > max_storage_bytes:
+        logger.warning(
+            f"[Auto-Cleanup] Total temp storage ({round(total_current_bytes / (1024**3), 2)} GB) "
+            f"exceeds quota ceiling ({round(max_storage_bytes / (1024**3), 2)} GB). Triggering FIFO quota purge."
+        )
+        target_ceiling = int(max_storage_bytes * target_reduction_ratio)
+        # Sort oldest files first
+        current_files.sort(key=lambda x: x[0])
+        for mtime, sz, item_path in current_files:
+            if total_current_bytes <= target_ceiling:
+                break
+            try:
+                if item_path.exists() and item_path.is_file():
+                    item_path.unlink()
+                    quota_deleted_files += 1
+                    quota_deleted_bytes += sz
+                    total_current_bytes -= sz
+            except Exception as e:
+                logger.warning(f"Failed to unlink file during quota purge {item_path}: {e}")
+
+    # Remove empty subdirectories (skip root targets and frames)
+    for target in target_dirs:
+        if target.exists() and target.is_dir():
+            for item in sorted(list(target.rglob("*")), key=lambda p: len(p.parts), reverse=True):
+                if item.is_dir() and item != target and item.name != "frames" and not is_protected_system_file(item):
+                    try:
+                        if not any(item.iterdir()):
+                            item.rmdir()
+                    except Exception:
+                        pass
+
+    tot_cleaned_files = ttl_deleted_files + quota_deleted_files
+    tot_cleaned_bytes = ttl_deleted_bytes + quota_deleted_bytes
+    tot_cleaned_mb = round(tot_cleaned_bytes / (1024 * 1024), 2)
+    tot_current_mb = round(total_current_bytes / (1024 * 1024), 2)
+
+    if tot_cleaned_files > 0:
+        logger.info(
+            f"[Auto-Cleanup] Cleaned {tot_cleaned_files} files ({tot_cleaned_mb} MB) "
+            f"[TTL: {ttl_deleted_files}, Quota: {quota_deleted_files}]. "
+            f"Current storage: {tot_current_mb} MB."
+        )
+
     return {
         "success": True,
-        "cleaned_files": cleaned_count,
-        "cleaned_bytes": cleaned_bytes,
-        "max_age_hours": max_age_hours
+        "ttl_deleted_files": ttl_deleted_files,
+        "ttl_deleted_bytes": ttl_deleted_bytes,
+        "quota_deleted_files": quota_deleted_files,
+        "quota_deleted_bytes": quota_deleted_bytes,
+        "total_cleaned_files": tot_cleaned_files,
+        "total_cleaned_bytes": tot_cleaned_bytes,
+        "total_cleaned_mb": tot_cleaned_mb,
+        "remaining_storage_bytes": total_current_bytes,
+        "remaining_storage_mb": tot_current_mb,
+        "max_age_seconds": max_age_seconds,
+        "max_storage_bytes": max_storage_bytes
     }
 
 

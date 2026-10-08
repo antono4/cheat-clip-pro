@@ -19,6 +19,7 @@ from backend.services.render_service import (
     update_batch_summary_and_zip,
 )
 from backend.services.system_service import (
+    auto_cleanup_expired_files,
     clear_temp_files,
     get_current_git_info,
     get_dir_size_and_count,
@@ -54,6 +55,7 @@ __all__ = [
     "process_batch_retry",
     "render_single_batch_clip",
     "update_batch_summary_and_zip",
+    "auto_cleanup_expired_files",
     "clear_temp_files",
     "get_current_git_info",
     "get_dir_size_and_count",

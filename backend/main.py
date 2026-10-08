@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import asynccontextmanager
 import logging
 import os
 
@@ -43,12 +45,50 @@ from backend.services.render_service import (
     BATCH_REQUESTS,
     RENDER_BATCHES,
 )
+from backend.services.system_service import auto_cleanup_expired_files
+
+
+async def background_storage_cleanup_worker():
+    """
+    Background worker that runs every 30 minutes (configurable via CLEANUP_INTERVAL_SECONDS):
+    1. Option 1: TTL cleanup (files older than 1 hour / TEMP_MAX_AGE_SECONDS).
+    2. Option 2: 5GB Max Quota ceiling (FIFO purge oldest files down to 80% if quota exceeded).
+    """
+    # Initial pause on startup
+    await asyncio.sleep(15)
+    while True:
+        try:
+            ttl_seconds = int(os.environ.get("TEMP_MAX_AGE_SECONDS", "3600"))
+            max_quota_gb = float(os.environ.get("TEMP_STORAGE_QUOTA_GB", "5.0"))
+            max_quota_bytes = int(max_quota_gb * 1024 * 1024 * 1024)
+            auto_cleanup_expired_files(max_age_seconds=ttl_seconds, max_storage_bytes=max_quota_bytes)
+        except Exception as e:
+            logger.warning(f"[Auto-Cleanup] Background worker encountered an error: {e}")
+
+        interval_seconds = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", "1800"))
+        await asyncio.sleep(interval_seconds)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: spawn auto-cleanup background task
+    cleanup_task = asyncio.create_task(background_storage_cleanup_worker())
+    logger.info("[Auto-Cleanup] Storage daemon active (Interval: 30m, TTL: 1h, Quota: 5GB).")
+    yield
+    # Shutdown: cancel task cleanly
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
+
 
 # Initialize FastAPI Application
 app = FastAPI(
     title="CHEAT CLIP PRO API",
     description="High-performance backend API for Cheat Clip Pro auto-clipper and video studio",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 # CORS configuration supporting configurable ALLOWED_ORIGINS and local development
