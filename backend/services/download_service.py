@@ -30,7 +30,8 @@ async def run_raw_download_job(
     v_url: str,
     out_path: str,
     filename: str,
-    download_title: Optional[str] = None
+    download_title: Optional[str] = None,
+    cookies_content: Optional[str] = None
 ):
     def on_progress(p: dict):
         if job_id in raw_download_jobs:
@@ -72,7 +73,7 @@ async def run_raw_download_job(
             raw_download_jobs[job_id]["filename"] = f"{dl_name}.mp4" if not dl_name.endswith(".mp4") else dl_name
             return
 
-        await asyncio.to_thread(download_full_raw_video, v_url, out_path, on_progress)
+        await asyncio.to_thread(download_full_raw_video, v_url, out_path, on_progress, cookies_content)
         raw_download_jobs[job_id]["status"] = "ready"
         raw_download_jobs[job_id]["progress_percent"] = 100.0
         dl_name = download_title or filename
@@ -90,7 +91,8 @@ async def run_raw_clip_download_job(
     video_id: str,
     start_time: float,
     end_time: float,
-    title: str
+    title: str,
+    cookies_content: Optional[str] = None
 ):
     clean_title = re.sub(r'[\\/*?:"<>|]', "", (title or "clip").strip())
     if not clean_title:
@@ -186,7 +188,8 @@ async def run_raw_clip_download_job(
                 v_url,
                 start_time,
                 end_time,
-                temp_name
+                temp_name,
+                cookies_content
             )
             if downloaded_temp and os.path.exists(downloaded_temp):
                 if out_path.exists():

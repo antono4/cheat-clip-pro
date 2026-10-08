@@ -31,7 +31,8 @@ async def render_single_batch_clip(
     settings: RenderSettingsModel,
     target_url: str,
     transcript: Optional[List[Dict[str, Any]]] = None,
-    total_clips: int = 1
+    total_clips: int = 1,
+    cookies_content: Optional[str] = None
 ):
     batch = RENDER_BATCHES.get(batch_id)
     if not batch:
@@ -58,7 +59,8 @@ async def render_single_batch_clip(
             target_url,
             start_t,
             end_t,
-            seg_filename
+            seg_filename,
+            cookies_content
         )
 
         if not raw_path or not os.path.exists(raw_path) or not is_valid_mp4(raw_path):
@@ -295,7 +297,8 @@ async def render_merged_batch_clips(
     clips: List[Dict[str, Any]],
     settings: RenderSettingsModel,
     target_url: str,
-    transcript: Optional[List[Dict[str, Any]]] = None
+    transcript: Optional[List[Dict[str, Any]]] = None,
+    cookies_content: Optional[str] = None
 ):
     batch = RENDER_BATCHES.get(batch_id)
     if not batch:
@@ -325,7 +328,8 @@ async def render_merged_batch_clips(
                 target_url,
                 s_t,
                 e_t,
-                part_filename
+                part_filename,
+                cookies_content
             )
             if not p_path or not os.path.exists(p_path) or not is_valid_mp4(p_path):
                 raise RuntimeError(
@@ -549,6 +553,7 @@ async def process_batch_rendering(batch_id: str, request: RenderBatchRequest):
         else:
             target_url = f"https://www.youtube.com/watch?v={target_url}"
 
+    cookies_content = getattr(request, "cookies", None)
     is_merged = bool(settings and getattr(settings, "render_mode", "separate") == "merged")
     if is_merged:
         batch["current_clip_index"] = 0
@@ -557,7 +562,8 @@ async def process_batch_rendering(batch_id: str, request: RenderBatchRequest):
             clips=clips,
             settings=settings,
             target_url=target_url,
-            transcript=request.transcript
+            transcript=request.transcript,
+            cookies_content=cookies_content
         )
         batch["current_clip_index"] = 1
     else:
@@ -570,7 +576,8 @@ async def process_batch_rendering(batch_id: str, request: RenderBatchRequest):
                 settings=settings,
                 target_url=target_url,
                 transcript=request.transcript,
-                total_clips=len(clips)
+                total_clips=len(clips),
+                cookies_content=cookies_content
             )
             batch["current_clip_index"] = idx + 1
 
@@ -601,6 +608,7 @@ async def process_batch_retry(batch_id: str, clip_indices: List[int]):
         else:
             target_url = f"https://www.youtube.com/watch?v={target_url}"
 
+    cookies_content = getattr(request, "cookies", None)
     is_merged = bool(batch.get("is_merged")) or bool(settings and getattr(settings, "render_mode", "separate") == "merged")
     if is_merged:
         batch["current_clip_index"] = 0
@@ -609,7 +617,8 @@ async def process_batch_retry(batch_id: str, clip_indices: List[int]):
             clips=clips,
             settings=settings,
             target_url=target_url,
-            transcript=request.transcript
+            transcript=request.transcript,
+            cookies_content=cookies_content
         )
         batch["current_clip_index"] = 1
     else:
@@ -623,7 +632,8 @@ async def process_batch_retry(batch_id: str, clip_indices: List[int]):
                     settings=settings,
                     target_url=target_url,
                     transcript=request.transcript,
-                    total_clips=len(clips)
+                    total_clips=len(clips),
+                    cookies_content=cookies_content
                 )
 
     update_batch_summary_and_zip(batch_id, settings)

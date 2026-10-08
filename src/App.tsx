@@ -6,6 +6,7 @@ import { CookiesModal } from './components/CookiesModal';
 import { ClipTrimmerModal } from './components/ClipTrimmerModal';
 import { AppUpdateModal } from './components/AppUpdateModal';
 import { resilientFetch } from './utils/api';
+import { getStoredCookies, hasStoredCookies } from './utils/cookieUtils';
 import { extractAudioFromVideoClient } from './utils/audioExtractor';
 import { useLanguage } from './locales';
 import type { AnalyzeResponse, ViralClip, RenderSettings, BatchRenderProgress } from './types';
@@ -149,34 +150,19 @@ export default function App() {
     };
   }, [loading]);
 
-  // Check YouTube cookies configuration on mount with resilient retry
+  // Check YouTube cookies configuration in browser localStorage
   useEffect(() => {
-    let isMounted = true;
-    const checkCookies = async () => {
-      try {
-        const res = await resilientFetch('/api/cookies', { maxRetries: 5, retryDelay: 1000, silent: true });
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted && data && typeof data.exists === 'boolean') {
-            setHasCookies(data.exists);
-          }
-        }
-      } catch {
-        // Backend still booting or offline
-      }
+    const checkCookies = () => {
+      setHasCookies(hasStoredCookies());
     };
 
     checkCookies();
 
-    // Recheck when user returns to window (e.g., after modifying cookies.txt)
-    const onFocus = () => {
-      checkCookies();
-    };
-    window.addEventListener('focus', onFocus);
+    // Recheck when user returns to window (e.g., after modifying cookies in modal or storage)
+    window.addEventListener('focus', checkCookies);
 
     return () => {
-      isMounted = false;
-      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('focus', checkCookies);
     };
   }, []);
 
@@ -275,6 +261,7 @@ export default function App() {
     if (!result) return;
     setIsLaunchingRender(true);
     try {
+      const userCookies = getStoredCookies();
       const resp = await fetch('/api/render-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -282,6 +269,7 @@ export default function App() {
           video_url: url || `https://www.youtube.com/watch?v=${result.video_id}`,
           video_id: result.video_id,
           clips: settings.selectedClips,
+          cookies: userCookies || undefined,
           settings: {
             aspect_ratio: settings.aspectRatio,
             background_style: settings.backgroundStyle,
@@ -403,11 +391,13 @@ export default function App() {
         };
       });
 
+      const userCookies = getStoredCookies();
       const resp = await fetch(`/api/render-batch/${batchId}/retry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clip_indices: clipIndex !== undefined ? [clipIndex] : undefined,
+          cookies: userCookies || undefined,
         }),
       });
 
@@ -1296,6 +1286,7 @@ export default function App() {
     let resultData: AnalyzeResponse | null = null;
 
     try {
+      const userCookies = getStoredCookies();
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1310,6 +1301,7 @@ export default function App() {
           subtitles: subtitlesSource === 'manual' ? manualSubtitlesContent : undefined,
           subtitles_filename: subtitlesSource === 'manual' ? manualSubtitlesFileName : undefined,
           target_clip_count: clipCountMode === 'auto' ? 'auto' : targetClipCount,
+          cookies: userCookies || undefined,
         }),
       });
 
@@ -1522,13 +1514,15 @@ export default function App() {
     setToastMessage(t.rawDownload.initiatingToast);
 
     try {
+      const userCookies = getStoredCookies();
       const res = await fetch("/api/download-raw-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           video_url: targetUrl,
           video_id: result.video_id,
-          title: result.title
+          title: result.title,
+          cookies: userCookies || undefined,
         })
       });
       const startData = await res.json();
@@ -1635,6 +1629,7 @@ export default function App() {
     const targetUrl = result.video_url || (url.trim() ? url.trim() : (result.video_id?.startsWith('gdrive_') || result.video_id?.startsWith('upload_') ? `/api/video/${result.video_id}` : `https://www.youtube.com/watch?v=${result.video_id}`));
 
     try {
+      const userCookies = getStoredCookies();
       const res = await fetch("/api/download-raw-clip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1643,7 +1638,8 @@ export default function App() {
           video_id: result.video_id,
           start_time: clip.start_time,
           end_time: clip.end_time,
-          title: clip.title
+          title: clip.title,
+          cookies: userCookies || undefined,
         })
       });
 

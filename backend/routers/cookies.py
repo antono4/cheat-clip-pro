@@ -98,7 +98,7 @@ def normalize_to_netscape(raw_content: str) -> str:
 
 
 @router.post("/api/cookies")
-async def save_youtube_cookies(request: Request):
+async def validate_youtube_cookies(request: Request):
     content = ""
     # Try reading as JSON first
     try:
@@ -122,65 +122,50 @@ async def save_youtube_cookies(request: Request):
             detail="Cookies content is empty or invalid. Please paste or upload valid cookies (Netscape .txt or JSON format).",
         )
 
-    try:
-        COOKIES_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(COOKIES_PATH, "w", encoding="utf-8") as f:
-            f.write(normalized)
-
-        try:
-            ROOT_COOKIES_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with open(ROOT_COOKIES_PATH, "w", encoding="utf-8") as f:
-                f.write(normalized)
-        except Exception:
-            pass
-
-        return {
-            "success": True,
-            "status": "saved",
-            "exists": True,
-            "has_cookies": True,
-            "size": len(normalized),
-        }
-    except Exception as e:
-        logger.error(f"Failed to save cookies: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to write cookies file: {str(e)}")
-
-
-@router.get("/api/cookies")
-def get_youtube_cookies_status():
-    eff = get_effective_cookies_path()
-    if eff and eff.exists():
-        sample_lines = []
-        try:
-            with open(eff, "r", encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#"):
-                        parts = line.split("\t")
-                        if parts and len(parts) > 0:
-                            domain = parts[0]
-                            if domain not in sample_lines:
-                                sample_lines.append(domain)
-                            if len(sample_lines) >= 6:
-                                break
-        except Exception:
-            pass
-        return {
-            "exists": True,
-            "has_cookies": True,
-            "size": eff.stat().st_size,
-            "sample_lines": sample_lines,
-            "cookies_content": ""  # Redacted to prevent credential exposure
-        }
-    return {"exists": False, "has_cookies": False, "size": 0, "sample_lines": [], "cookies_content": ""}
-
-
-@router.delete("/api/cookies")
-def delete_youtube_cookies():
+    # Clean up any legacy server cookie file on disk to guarantee zero server storage
     for p in [COOKIES_PATH, ROOT_COOKIES_PATH]:
         if p.exists():
             try:
                 p.unlink()
             except Exception:
                 pass
-    return {"success": True, "status": "deleted", "exists": False, "has_cookies": False}
+
+    return {
+        "success": True,
+        "status": "valid",
+        "storage": "localStorage",
+        "size": len(normalized),
+        "message": "Cookies validated successfully for client-side LocalStorage."
+    }
+
+
+@router.get("/api/cookies")
+def get_youtube_cookies_status():
+    # Enforce zero persistent server storage
+    for p in [COOKIES_PATH, ROOT_COOKIES_PATH]:
+        if p.exists():
+            try:
+                p.unlink()
+            except Exception:
+                pass
+
+    return {
+        "exists": False,
+        "has_cookies": False,
+        "storage": "localStorage",
+        "size": 0,
+        "sample_lines": [],
+        "cookies_content": ""
+    }
+
+
+@router.delete("/api/cookies")
+def delete_youtube_cookies():
+    # Purge any legacy cookie file on server
+    for p in [COOKIES_PATH, ROOT_COOKIES_PATH]:
+        if p.exists():
+            try:
+                p.unlink()
+            except Exception:
+                pass
+    return {"success": True, "status": "deleted", "exists": False, "has_cookies": False, "storage": "localStorage"}

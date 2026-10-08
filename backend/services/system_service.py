@@ -102,16 +102,15 @@ def clear_temp_files() -> dict:
 
     cleared_mb = round(cleared_bytes / (1024 * 1024), 2)
     formatted = f"{cleared_mb} MB" if cleared_mb < 1024 else f"{round(cleared_mb / 1024, 2)} GB"
-    cookies_present = bool(COOKIES_PATH.exists() and COOKIES_PATH.stat().st_size > 0)
-    logger.info(f"Cleared temp folder: {cleared_files} files, {formatted} (Cookies preserved: {cookies_present})")
+    logger.info(f"Cleared temp folder: {cleared_files} files, {formatted}")
     return {
         "success": True,
         "cleared_files": cleared_files,
         "cleared_bytes": cleared_bytes,
         "cleared_mb": cleared_mb,
         "cookies_preserved": True,
-        "has_cookies": cookies_present,
-        "message": f"Successfully cleared {cleared_files} temporary files ({formatted}). Stored YouTube cookies preserved."
+        "has_cookies": False,
+        "message": f"Successfully cleared {cleared_files} temporary files ({formatted}). Cookies remain safely stored in your browser LocalStorage."
     }
 
 

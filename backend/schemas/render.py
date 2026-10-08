@@ -59,6 +59,8 @@ class RenderBatchRequest(BaseModel):
     clips: List[Dict[str, Any]]
     settings: RenderSettingsModel
     transcript: Optional[List[Dict[str, Any]]] = None
+    cookies: Optional[str] = None
 
 class RetryBatchRequest(BaseModel):
     clip_indices: Optional[List[int]] = None
+    cookies: Optional[str] = None

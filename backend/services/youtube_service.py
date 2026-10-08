@@ -15,7 +15,7 @@ from fastapi import HTTPException
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import JSONFormatter
 
-from backend.config import get_effective_cookies_path, logger
+from backend.config import get_effective_cookies_path, ephemeral_cookies_file, logger
 from backend.utils.proxy import (
     TimeoutSession,
     _shared_cookie_jar,
@@ -209,7 +209,7 @@ def get_youtube_oembed_title(video_id_or_url: str) -> Optional[str]:
     return None
 
 
-def fetch_video_metadata(url: str, custom_proxy: Optional[str] = None):
+def fetch_video_metadata(url: str, custom_proxy: Optional[str] = None, cookies_content: Optional[str] = None):
     """Fetches video title, duration, and viewer retention heatmap using yt-dlp with oEmbed title fallback."""
     is_vercel = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
     proxy = custom_proxy or get_proxy_url()
@@ -218,19 +218,20 @@ def fetch_video_metadata(url: str, custom_proxy: Optional[str] = None):
     
     attempts = [proxy, None] if (is_vercel and proxy) else [None, proxy] if proxy else [None]
     
-    for attempt_proxy in attempts:
-        ydl_opts = {
-            'skip_download': True,
-            'youtube_include_dash_manifest': False,
-            'quiet': True,
-            'no_warnings': True,
-            'nocheckcertificate': True,
-            'proxy': attempt_proxy,
-            'socket_timeout': 10
-        }
-        eff_cookies = get_effective_cookies_path()
-        if eff_cookies:
-            ydl_opts['cookiefile'] = str(eff_cookies)
+    with ephemeral_cookies_file(cookies_content) as temp_cookies:
+        for attempt_proxy in attempts:
+            ydl_opts = {
+                'skip_download': True,
+                'youtube_include_dash_manifest': False,
+                'quiet': True,
+                'no_warnings': True,
+                'nocheckcertificate': True,
+                'proxy': attempt_proxy,
+                'socket_timeout': 10
+            }
+            eff_cookies = temp_cookies or get_effective_cookies_path()
+            if eff_cookies:
+                ydl_opts['cookiefile'] = str(eff_cookies)
         ydl_opts['extractor_args'] = {'youtube': {'player_client': ['default', 'web_embedded', 'ios']}}
 
         try:
@@ -465,21 +466,22 @@ def get_supadata_usage_data(force: bool = False) -> dict:
     return res
 
 
-def fetch_transcript_ytdlp(video_id: str, proxy: Optional[str] = None) -> List[dict]:
+def fetch_transcript_ytdlp(video_id: str, proxy: Optional[str] = None, cookies_content: Optional[str] = None) -> List[dict]:
     """Attempts to extract captions using yt-dlp's player response directly (free, no quota used).
     Can be run direct (proxy=None) or routed through a proxy."""
-    ydl_opts = {
-        'skip_download': True,
-        'quiet': True,
-        'no_warnings': True,
-        'nocheckcertificate': True,
-        'proxy': proxy,
-        'socket_timeout': 10
-    }
-    eff_cookies = get_effective_cookies_path()
-    if eff_cookies:
-        ydl_opts['cookiefile'] = str(eff_cookies)
-    ydl_opts['extractor_args'] = {'youtube': {'player_client': ['default', 'web_embedded', 'ios']}}
+    with ephemeral_cookies_file(cookies_content) as temp_cookies:
+        ydl_opts = {
+            'skip_download': True,
+            'quiet': True,
+            'no_warnings': True,
+            'nocheckcertificate': True,
+            'proxy': proxy,
+            'socket_timeout': 10
+        }
+        eff_cookies = temp_cookies or get_effective_cookies_path()
+        if eff_cookies:
+            ydl_opts['cookiefile'] = str(eff_cookies)
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['default', 'web_embedded', 'ios']}}
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -536,7 +538,8 @@ def fetch_transcript_ytdlp(video_id: str, proxy: Optional[str] = None) -> List[d
 def fetch_transcript(
     video_id: str,
     custom_proxy: Optional[str] = None,
-    on_progress: Optional[Callable[[str, str, int], None]] = None
+    on_progress: Optional[Callable[[str, str, int], None]] = None,
+    cookies_content: Optional[str] = None
 ) -> List[dict]:
     """Retrieves subtitles using a comprehensive multi-tier fallback pipeline:
       Tier 1: Supadata API (if keys configured) — cloud residential rotation
@@ -626,7 +629,7 @@ def fetch_transcript(
         # ── Tier 4: yt-dlp Native Extraction with Proxy ──────────────────────────
         notify("Tier 4/7: Proxy yt-dlp Native", "Trying Method 4/7: yt-dlp native caption extraction via proxy...", 70)
         try:
-            ytdlp_proxy_data = fetch_transcript_ytdlp(video_id, proxy=proxy_url)
+            ytdlp_proxy_data = fetch_transcript_ytdlp(video_id, proxy=proxy_url, cookies_content=cookies_content)
             if ytdlp_proxy_data:
                 res = normalize_transcript(ytdlp_proxy_data)
                 if res:
@@ -684,7 +687,7 @@ def fetch_transcript(
     # ── Tier 7: Direct yt-dlp Native Extraction ──────────────────────────────
     notify("Tier 7/7: Direct yt-dlp Native", "Trying Method 7/7: Direct yt-dlp native caption extraction...", 94)
     try:
-        direct_ytdlp_data = fetch_transcript_ytdlp(video_id, proxy=None)
+        direct_ytdlp_data = fetch_transcript_ytdlp(video_id, proxy=None, cookies_content=cookies_content)
         if direct_ytdlp_data:
             res = normalize_transcript(direct_ytdlp_data)
             if res:

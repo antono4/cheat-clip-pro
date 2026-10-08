@@ -10,8 +10,10 @@ import unicodedata
 import math
 import urllib.parse
 import urllib.request
+import contextlib
+import tempfile
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple, Union
+from typing import List, Dict, Any, Optional, Tuple, Union, Callable
 from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger("cheat-clip-pro.video-engine")
@@ -23,8 +25,121 @@ FONTS_DIR = BASE_DIR / "fonts"
 COOKIES_PATH = BASE_DIR / "cookies.txt"
 ROOT_COOKIES_PATH = BASE_DIR.parent / "cookies.txt"
 
+
+def normalize_to_netscape(raw_content: str) -> str:
+    """Cleans raw cookie input, strips UTF BOMs and null bytes, and auto-converts
+    JSON cookies (from Cookie-Editor, EditThisCookie, etc.) to valid Netscape format for yt-dlp.
+    """
+    if not raw_content:
+        return ""
+
+    text = (
+        raw_content.replace("\ufeff", "")
+        .replace("\ufffe", "")
+        .replace("\x00", "")
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .strip()
+    )
+
+    if not text:
+        return ""
+
+    if text.startswith("[") or text.startswith("{"):
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, dict):
+                parsed = [parsed]
+            if isinstance(parsed, list) and len(parsed) > 0 and isinstance(parsed[0], dict):
+                lines = [
+                    "# Netscape HTTP Cookie File",
+                    "# http://curl.haxx.se/rfc/cookie_spec.html",
+                    "# Converted automatically from JSON format by CheatClip Pro",
+                    "",
+                ]
+                count = 0
+                for item in parsed:
+                    domain = str(item.get("domain") or item.get("host") or "").strip()
+                    if not domain:
+                        continue
+                    flag = "TRUE" if domain.startswith(".") else "FALSE"
+                    path = str(item.get("path") or "/").strip()
+                    secure = "TRUE" if item.get("secure") else "FALSE"
+                    exp = item.get("expirationDate") or item.get("expires") or item.get("expiry") or 0
+                    try:
+                        exp_int = int(float(exp))
+                    except Exception:
+                        exp_int = 0
+                    if exp_int <= 0:
+                        exp_int = 2147483647
+
+                    name = str(item.get("name") or "").strip()
+                    val = str(item.get("value") or "").strip()
+                    if name:
+                        lines.append(f"{domain}\t{flag}\t{path}\t{secure}\t{exp_int}\t{name}\t{val}")
+                        count += 1
+
+                if count > 0:
+                    return "\n".join(lines) + "\n"
+        except Exception:
+            pass
+
+    lines = text.split("\n")
+    cleaned_lines = []
+    has_header = False
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if "# Netscape HTTP Cookie File" in stripped:
+            has_header = True
+        cleaned_lines.append(stripped)
+
+    if not has_header:
+        cleaned_lines.insert(0, "# Netscape HTTP Cookie File")
+        cleaned_lines.insert(1, "# http://curl.haxx.se/rfc/cookie_spec.html")
+        cleaned_lines.insert(2, "")
+
+    return "\n".join(cleaned_lines) + "\n"
+
+
+@contextlib.contextmanager
+def ephemeral_cookies_file(cookies_content: Optional[str]):
+    """Creates a temporary Netscape cookies file for a single task and ensures it is deleted immediately."""
+    if not cookies_content or len(str(cookies_content).strip()) < 10:
+        yield None
+        return
+
+    normalized = normalize_to_netscape(str(cookies_content))
+    if not normalized or len(normalized.strip()) < 10:
+        yield None
+        return
+
+    temp_file = tempfile.NamedTemporaryFile(
+        mode="w",
+        prefix="yt_cookie_",
+        suffix=".txt",
+        dir=str(TEMP_DIR),
+        delete=False,
+        encoding="utf-8"
+    )
+    temp_path = Path(temp_file.name)
+    try:
+        temp_file.write(normalized)
+        temp_file.flush()
+        temp_file.close()
+        yield temp_path
+    finally:
+        try:
+            if temp_path.exists():
+                temp_path.unlink()
+        except Exception:
+            pass
+
+
 def get_effective_cookies_path() -> Optional[Path]:
-    """Returns valid cookies file path from backend/cookies.txt or root cookies.txt."""
+    """Returns valid cookies file path if persistent file exists on disk (fallback)."""
     if COOKIES_PATH.exists() and COOKIES_PATH.stat().st_size > 0:
         return COOKIES_PATH
     if ROOT_COOKIES_PATH.exists() and ROOT_COOKIES_PATH.stat().st_size > 0:
@@ -255,7 +370,10 @@ def get_yt_dlp_cookies_args() -> List[str]:
     return []
 
 
-def get_yt_dlp_base_cmd(include_cookies: bool = True) -> List[str]:
+def get_yt_dlp_base_cmd(
+    include_cookies: bool = True,
+    cookies_path: Optional[Union[str, Path]] = None,
+) -> List[str]:
     """
     Returns base command for yt-dlp with JavaScript runtime, player extractor args, and cookies.
     Tries standalone 'yt-dlp' executable first, then falls back to python module:
@@ -286,7 +404,10 @@ def get_yt_dlp_base_cmd(include_cookies: bool = True) -> List[str]:
         "--force-ipv4"
     ])
 
-    if include_cookies:
+    if cookies_path and Path(cookies_path).exists() and Path(cookies_path).stat().st_size > 0:
+        logger.info(f"Using ephemeral YouTube cookies from: {cookies_path}")
+        cmd.extend(["--cookies", str(cookies_path)])
+    elif include_cookies:
         eff = get_effective_cookies_path()
         if eff:
             logger.info(f"Using YouTube cookies from: {eff}")
@@ -549,7 +670,8 @@ def download_clip_segment(
     video_url: str,
     start_time: float,
     end_time: float,
-    output_filename: str
+    output_filename: str,
+    cookies_content: Optional[str] = None
 ) -> str:
     """
     Downloads or slices the requested time slice in high definition (1080p).
@@ -651,14 +773,15 @@ def download_clip_segment(
     # Ensures clips > 1 minute (e.g. 70s, 90s, 120s, 180s) have ample time to download and merge without timing out.
     timeout_sec = max(300, min(1200, int(clip_duration * 5) + 90))
 
-    has_cookies = get_effective_cookies_path() is not None
-    # If cookies are present, try with cookies first; if rejected by YouTube (or any reload/bot error), try guest mode.
-    attempts = [True, False] if has_cookies else [False]
-    last_err_snippet = "unknown"
+    with ephemeral_cookies_file(cookies_content) as temp_cookies:
+        has_cookies = temp_cookies is not None or get_effective_cookies_path() is not None
+        # If cookies are present, try with cookies first; if rejected by YouTube (or any reload/bot error), try guest mode.
+        attempts = [True, False] if has_cookies else [False]
+        last_err_snippet = "unknown"
 
-    for use_cookies in attempts:
-        mode_label = "with cookies" if use_cookies else "guest mode (without cookies)"
-        base_cmd = get_yt_dlp_base_cmd(include_cookies=use_cookies)
+        for use_cookies in attempts:
+            mode_label = "with cookies" if use_cookies else "guest mode (without cookies)"
+            base_cmd = get_yt_dlp_base_cmd(include_cookies=use_cookies, cookies_path=temp_cookies if use_cookies else None)
         logger.info(f"Downloading HD section ({clip_duration:.1f}s) {t_start_fmt} -> {t_end_fmt} for {clean_url} ({mode_label}, timeout: {timeout_sec}s)")
 
         # Method 1: yt-dlp --download-sections with multi-fragment acceleration, socket timeout, & retries
@@ -874,7 +997,12 @@ def download_clip_segment(
     raise RuntimeError(f"Failed to download video clip segment from YouTube ({last_err_snippet}). Check your internet connection or cookies.")
 
 
-def download_full_raw_video(video_url: str, output_path: str, progress_callback=None) -> str:
+def download_full_raw_video(
+    video_url: str,
+    output_path: Union[str, Path],
+    progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+    cookies_content: Optional[str] = None
+) -> str:
     """
     Downloads the full raw video from YouTube in maximum quality (up to 1080p),
     or copies the local uploaded / Google Drive video file directly.
@@ -900,12 +1028,13 @@ def download_full_raw_video(video_url: str, output_path: str, progress_callback=
     if not clean_url.startswith("http"):
         clean_url = f"https://www.youtube.com/watch?v={clean_url}"
 
-    has_cookies = get_effective_cookies_path() is not None
-    attempts = [True, False] if has_cookies else [False]
+    with ephemeral_cookies_file(cookies_content) as temp_cookies:
+        has_cookies = temp_cookies is not None or get_effective_cookies_path() is not None
+        attempts = [True, False] if has_cookies else [False]
 
-    for use_cookies in attempts:
-        base_cmd = get_yt_dlp_base_cmd(include_cookies=use_cookies)
-        mode_label = "with cookies" if use_cookies else "guest mode (without cookies)"
+        for use_cookies in attempts:
+            base_cmd = get_yt_dlp_base_cmd(include_cookies=use_cookies, cookies_path=temp_cookies if use_cookies else None)
+            mode_label = "with cookies" if use_cookies else "guest mode (without cookies)"
         cmd = [
             *base_cmd,
             "--no-colors",
@@ -2930,7 +3059,7 @@ def render_clip_to_mp4(
     return str(output_mp4_path)
 
 
-def extract_clip_frame(video_url: str, video_id: str, timestamp: float = 0.0) -> Optional[str]:
+def extract_clip_frame(video_url: str, video_id: str, timestamp: float = 0.0, cookies_content: Optional[str] = None) -> Optional[str]:
     """
     Extracts a single JPEG image frame at timestamp for the real video preview.
     Caches the frame on disk in TEMP_DIR / 'frames'.
@@ -3006,23 +3135,24 @@ def extract_clip_frame(video_url: str, video_id: str, timestamp: float = 0.0) ->
     # 2. Extract a tiny 1-second slice of format 18 (fast 360p mp4) using yt-dlp + ffmpeg
     try:
         clean_url = video_url.strip() if video_url else f"https://www.youtube.com/watch?v={video_id}"
-        base_cmd = get_yt_dlp_base_cmd()
-        temp_slice = frames_dir / f"slice_{safe_id}_{sec}.mp4"
+        with ephemeral_cookies_file(cookies_content) as temp_cookies:
+            base_cmd = get_yt_dlp_base_cmd(include_cookies=True, cookies_path=temp_cookies)
+            temp_slice = frames_dir / f"slice_{safe_id}_{sec}.mp4"
 
-        t_start = target_ts
-        t_end = target_ts + 1.0
-        t_start_fmt = format_section_time(t_start)
-        t_end_fmt = format_section_time(t_end)
+            t_start = target_ts
+            t_end = target_ts + 1.0
+            t_start_fmt = format_section_time(t_start)
+            t_end_fmt = format_section_time(t_end)
 
-        slice_cmd = [
-            *base_cmd,
-            "-f", "18/best[height<=720]/best",
-            "--download-sections", f"*{t_start_fmt}-{t_end_fmt}",
-            "-o", str(temp_slice),
-            "--no-warnings",
-            clean_url
-        ]
-        subprocess.run(slice_cmd, capture_output=True, text=True, timeout=20)
+            slice_cmd = [
+                *base_cmd,
+                "-f", "18/best[height<=720]/best",
+                "--download-sections", f"*{t_start_fmt}-{t_end_fmt}",
+                "-o", str(temp_slice),
+                "--no-warnings",
+                clean_url
+            ]
+            subprocess.run(slice_cmd, capture_output=True, text=True, timeout=20)
         if temp_slice.exists() and temp_slice.stat().st_size > 1000:
             ff_cmd = [
                 "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",

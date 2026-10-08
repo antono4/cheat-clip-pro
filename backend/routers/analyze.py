@@ -366,7 +366,7 @@ async def analyze_video(request: AnalyzeRequest):
 
             channel = ""
             try:
-                metadata = await asyncio.to_thread(fetch_video_metadata, canonical_url, request.proxy)
+                metadata = await asyncio.to_thread(fetch_video_metadata, canonical_url, request.proxy, request.cookies)
                 title    = metadata["title"]
                 channel  = metadata.get("channel", "")
                 duration = metadata["duration"]
@@ -483,7 +483,7 @@ async def analyze_video(request: AnalyzeRequest):
 
                 try:
                     task = asyncio.create_task(
-                        asyncio.to_thread(fetch_transcript, video_id, request.proxy, progress_callback)
+                        asyncio.to_thread(fetch_transcript, video_id, request.proxy, progress_callback, request.cookies)
                     )
 
                     while not task.done():

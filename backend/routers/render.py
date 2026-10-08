@@ -116,6 +116,8 @@ async def retry_batch_rendering(
             raise HTTPException(status_code=400, detail="Batch is currently rendering. Please wait for the current clip to finish.")
 
     req = BATCH_REQUESTS[batch_id]
+    if body and body.cookies:
+        req.cookies = body.cookies
     indices_to_retry: List[int] = []
     if body and body.clip_indices:
         indices_to_retry = [i for i in body.clip_indices if 0 <= i < len(batch["clips"])]

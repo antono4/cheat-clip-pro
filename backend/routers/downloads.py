@@ -56,7 +56,7 @@ async def handle_download_raw_video(req: RawVideoDownloadRequest, background_tas
         "error": None
     }
 
-    background_tasks.add_task(run_raw_download_job, job_id, v_url, out_path, filename, download_title)
+    background_tasks.add_task(run_raw_download_job, job_id, v_url, out_path, filename, download_title, req.cookies)
     return {"job_id": job_id, "status": "starting"}
 
 
@@ -105,7 +105,8 @@ async def handle_download_raw_clip(req: RawClipDownloadRequest, background_tasks
         req.video_id,
         req.start_time,
         req.end_time,
-        req.title
+        req.title,
+        req.cookies
     )
     return {"job_id": job_id, "status": "starting"}
 
