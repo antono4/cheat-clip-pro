@@ -53,6 +53,122 @@ from backend.utils.text import (
     sanitize_first_person_title,
 )
 
+
+def _format_parsed_dict(data: dict, channel: str, lang_code: str) -> dict:
+    raw_clips = data.get("clips") or []
+    formatted_clips = []
+    for c in raw_clips:
+        if not isinstance(c, dict):
+            continue
+        title = sanitize_first_person_title(str(c.get('title', '')), channel, lang=lang_code)
+        title_sug = sanitize_first_person_title(str(c.get('title_suggestion', '')), channel, lang=lang_code)
+        formatted_clips.append({
+            "title": title,
+            "start_time": float(c.get('start_time', 0.0) or 0.0),
+            "end_time": float(c.get('end_time', 0.0) or 0.0),
+            "hook_time": float(c.get('hook_time')) if c.get('hook_time') is not None else None,
+            "virality_score": int(c.get('virality_score', 0) or 0),
+            "key_quotes": c.get('key_quotes') if isinstance(c.get('key_quotes'), list) else [],
+            "title_suggestion": title_sug,
+            "caption_suggestion": str(c.get('caption_suggestion', '') or ''),
+            "hashtag_suggestion": str(c.get('hashtag_suggestion', '') or ''),
+        })
+    return {
+        "summary": str(data.get("summary", "") or ""),
+        "clips": formatted_clips
+    }
+
+
+def parse_lenient_json_analysis(raw_text: str, channel: str = "", lang_code: str = "en") -> Optional[dict]:
+    """Robust parser that extracts and repairs structured analysis even if truncated, unescaped, or containing trailing commas."""
+    if not raw_text or not raw_text.strip():
+        return None
+    
+    clean_text = raw_text.strip()
+    if clean_text.startswith("```"):
+        clean_text = re.sub(r"^```[a-zA-Z]*\n?", "", clean_text)
+        clean_text = re.sub(r"\n?```$", "", clean_text)
+    clean_text = clean_text.strip()
+
+    # 1. Standard json parse
+    try:
+        data = json.loads(clean_text)
+        if isinstance(data, dict):
+            return _format_parsed_dict(data, channel, lang_code)
+    except Exception:
+        pass
+
+    # 2. Fix trailing commas (e.g. [...,])
+    try:
+        no_trailing_commas = re.sub(r',\s*([\]}])', r'\1', clean_text)
+        data = json.loads(no_trailing_commas)
+        if isinstance(data, dict):
+            return _format_parsed_dict(data, channel, lang_code)
+    except Exception:
+        pass
+
+    # 3. Truncated JSON repair (recovers clips when output was cut off mid-response)
+    try:
+        last_brace_idx = clean_text.rfind("}")
+        if last_brace_idx != -1:
+            truncated_candidate = clean_text[:last_brace_idx + 1]
+            if '"clips"' in truncated_candidate:
+                if not truncated_candidate.endswith("]}"):
+                    if truncated_candidate.endswith("]"):
+                        truncated_candidate += "}"
+                    else:
+                        truncated_candidate += "\n]}"
+                truncated_candidate = re.sub(r',\s*([\]}])', r'\1', truncated_candidate)
+                data = json.loads(truncated_candidate)
+                if isinstance(data, dict):
+                    return _format_parsed_dict(data, channel, lang_code)
+    except Exception:
+        pass
+
+    # 4. Lenient Regex-based Clip Extraction (recovers individual clips even with corrupted JSON syntax)
+    try:
+        clips_list = []
+        summary_match = re.search(r'"summary"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_text)
+        summary = summary_match.group(1).encode().decode('unicode_escape') if summary_match else ""
+
+        raw_clip_blocks = re.findall(r'\{[^{}]*?"(?:title|start_time)"[^{}]*?\}', clean_text, re.DOTALL)
+        for block in raw_clip_blocks:
+            try:
+                clip_obj = json.loads(block)
+            except Exception:
+                title_m = re.search(r'"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', block)
+                start_m = re.search(r'"start_time"\s*:\s*([\d\.]+)', block)
+                end_m = re.search(r'"end_time"\s*:\s*([\d\.]+)', block)
+                hook_m = re.search(r'"hook_time"\s*:\s*([\d\.]+)', block)
+                score_m = re.search(r'"virality_score"\s*:\s*(\d+)', block)
+                sug_m = re.search(r'"title_suggestion"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', block)
+                cap_m = re.search(r'"caption_suggestion"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', block)
+                tag_m = re.search(r'"hashtag_suggestion"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', block)
+                quotes_m = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', block)
+
+                clip_obj = {
+                    "title": title_m.group(1) if title_m else "",
+                    "start_time": float(start_m.group(1)) if start_m else 0.0,
+                    "end_time": float(end_m.group(1)) if end_m else 0.0,
+                    "hook_time": float(hook_m.group(1)) if hook_m else None,
+                    "virality_score": int(score_m.group(1)) if score_m else 75,
+                    "key_quotes": quotes_m[:2] if quotes_m else [],
+                    "title_suggestion": sug_m.group(1) if sug_m else "",
+                    "caption_suggestion": cap_m.group(1) if cap_m else "",
+                    "hashtag_suggestion": tag_m.group(1) if tag_m else "",
+                }
+
+            if clip_obj.get("start_time", 0.0) or clip_obj.get("end_time", 0.0) or clip_obj.get("title"):
+                clips_list.append(clip_obj)
+
+        if clips_list:
+            return _format_parsed_dict({"summary": summary, "clips": clips_list}, channel, lang_code)
+    except Exception as e:
+        logger.warning(f"Lenient regex parsing error: {e}")
+
+    return None
+
+
 router = APIRouter(tags=["Analyze"])
 
 
@@ -692,12 +808,22 @@ async def analyze_video(request: AnalyzeRequest):
                 f"Identify the highest-quality, most viral segments within this range."
             )
         else:
-            clip_range = "up to around 200 (AI-determined based on interesting topics)"
+            if duration <= 300:
+                auto_clip_target = "3-5"
+            elif duration <= 900:
+                auto_clip_target = "5-10"
+            elif duration <= 1800:
+                auto_clip_target = "8-15"
+            elif duration <= 3600:
+                auto_clip_target = "10-20"
+            else:
+                auto_clip_target = "15-25"
+
+            clip_range = f"{auto_clip_target} clips (AI-selected based on viral potential)"
             clip_count_instruction = (
-                "DYNAMIC AUTO CLIP COUNT & TOPIC CURATION RULES:\n"
-                "- You (the AI editor) decide the total number of clips to extract based on how many genuinely interesting, high-value, and viral topics exist in this video.\n"
-                "- Upper Constraint Ceiling: Extract up to around 200 clips maximum (no need to reach exactly 200; extract as many as the video's content genuinely justifies, up to approximately 200 clips).\n"
-                "- High-Interest Standalone Topics Required: Every single clip MUST focus on an interesting, distinct, and compelling topic, idea, debate, story, funny moment, or revelation. Do NOT produce repetitive, weak, or trivial filler clips just to inflate the count. Only create clips for moments that would actually captivate an audience."
+                f"DYNAMIC AUTO CLIP COUNT & TOPIC CURATION RULES:\n"
+                f"- Extract approximately {auto_clip_target} high-impact, standalone viral clips based on the most captivating moments in this video.\n"
+                f"- High-Interest Standalone Topics Required: Every single clip MUST focus on an interesting, distinct, and compelling topic, idea, debate, story, funny moment, or revelation. Do NOT produce repetitive, weak, or trivial filler clips."
             )
 
         # ── Step 4: Build prompt & Detect Language ─────────────────────────────
@@ -869,7 +995,7 @@ async def analyze_video(request: AnalyzeRequest):
                         response_mime_type="application/json",
                         response_schema=VideoAnalysis,
                         temperature=0.2,
-                        max_output_tokens=8192,
+                        max_output_tokens=65536,
                     )
                 ))
                 
@@ -936,33 +1062,29 @@ async def analyze_video(request: AnalyzeRequest):
                     parsed_data = None
                     if hasattr(resp_candidate, 'parsed') and resp_candidate.parsed is not None:
                         parsed = resp_candidate.parsed
-                        parsed_data = {
-                            "summary": getattr(parsed, 'summary', ''),
-                            "clips": [
-                                {
-                                    "title": sanitize_first_person_title(getattr(c, 'title', ''), channel, lang=lang_code),
-                                    "start_time": getattr(c, 'start_time', 0.0),
-                                    "end_time": getattr(c, 'end_time', 0.0),
-                                    "hook_time": getattr(c, 'hook_time', None),
-                                    "virality_score": getattr(c, 'virality_score', 0),
-                                    "key_quotes": getattr(c, 'key_quotes', []),
-                                    "title_suggestion": sanitize_first_person_title(getattr(c, 'title_suggestion', ''), channel, lang=lang_code),
-                                    "caption_suggestion": getattr(c, 'caption_suggestion', ''),
-                                    "hashtag_suggestion": getattr(c, 'hashtag_suggestion', ''),
-                                }
-                                for c in (getattr(parsed, 'clips', []) or [])
-                            ]
-                        }
-                    elif resp_candidate.text:
-                        raw_text = resp_candidate.text.strip()
-                        if raw_text.startswith("```"):
-                            raw_text = re.sub(r"^```[a-zA-Z]*\n?", "", raw_text)
-                            raw_text = re.sub(r"\n?```$", "", raw_text)
-                        try:
-                            parsed_data = json.loads(raw_text)
-                        except Exception as json_err:
-                            logger.warning(f"JSON parsing error from {model_name}: {json_err}")
-                            parsed_data = None
+                        raw_clips = getattr(parsed, 'clips', []) or []
+                        if raw_clips:
+                            parsed_data = {
+                                "summary": getattr(parsed, 'summary', ''),
+                                "clips": [
+                                    {
+                                        "title": sanitize_first_person_title(getattr(c, 'title', ''), channel, lang=lang_code),
+                                        "start_time": getattr(c, 'start_time', 0.0),
+                                        "end_time": getattr(c, 'end_time', 0.0),
+                                        "hook_time": getattr(c, 'hook_time', None),
+                                        "virality_score": getattr(c, 'virality_score', 0),
+                                        "key_quotes": getattr(c, 'key_quotes', []),
+                                        "title_suggestion": sanitize_first_person_title(getattr(c, 'title_suggestion', ''), channel, lang=lang_code),
+                                        "caption_suggestion": getattr(c, 'caption_suggestion', ''),
+                                        "hashtag_suggestion": getattr(c, 'hashtag_suggestion', ''),
+                                    }
+                                    for c in raw_clips
+                                ]
+                            }
+                    
+                    # Lenient fallback parser (repairs truncated/unescaped JSON from text)
+                    if parsed_data is None and hasattr(resp_candidate, 'text') and resp_candidate.text:
+                        parsed_data = parse_lenient_json_analysis(resp_candidate.text, channel, lang_code)
 
                     if parsed_data is not None:
                         clips_found = len(parsed_data.get('clips', []))
