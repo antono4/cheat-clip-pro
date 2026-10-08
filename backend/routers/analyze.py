@@ -808,7 +808,7 @@ async def analyze_video(request: AnalyzeRequest):
         })
 
         # ── Step 4: Gemini API call with dynamic Flash fallback models and retry ───────────
-        client = genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=45000))
+        client = genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=120000))
         
         # Discover all available Flash models for the user's API key
         discovered_flash = await asyncio.to_thread(get_flash_models_for_key, client)
@@ -834,7 +834,7 @@ async def analyze_video(request: AnalyzeRequest):
         for idx, model_name in enumerate(models_to_try):
             next_model_hint = models_to_try[idx + 1] if idx + 1 < len(models_to_try) else None
             MAX_RETRIES = 1
-            MODEL_TIMEOUT_SEC = 50.0  # Hard timeout to prevent infinite stuck inference
+            MODEL_TIMEOUT_SEC = 120.0  # 120s best-practice timeout for comprehensive video analysis
             
             for attempt in range(MAX_RETRIES):
                 if attempt > 0:
@@ -860,7 +860,7 @@ async def analyze_video(request: AnalyzeRequest):
                     "message": f"Calling {model_name} (attempt {attempt + 1}/{MAX_RETRIES})..."
                 })
                 
-                # Execute Gemini call with heartbeat and strict timeout
+                # Execute Gemini call with heartbeat and balanced timeout
                 task = asyncio.create_task(asyncio.to_thread(
                     client.models.generate_content,
                     model=model_name,
@@ -886,31 +886,31 @@ async def analyze_video(request: AnalyzeRequest):
                             last_error = TimeoutError(f"{model_name} inference timed out after {MODEL_TIMEOUT_SEC}s")
                             break
                         
-                        if elapsed < 5:
+                        if elapsed < 8:
                             stage = "Neural Context Loading"
                             detail = f"Transmitting {len(transcript_dump)} timestamped dialogue segments to {model_name}..."
-                            step_prog = min(35, 12 + elapsed * 4)
-                        elif elapsed < 12:
+                            step_prog = min(35, 12 + int(elapsed * 2.8))
+                        elif elapsed < 20:
                             stage = "Retention Spike Cross-Analysis"
                             detail = f"Correlating viewer retention peaks against speaker dialogue to isolate viral moments..."
-                            step_prog = min(55, 35 + int((elapsed - 5) * 3))
-                        elif elapsed < 20:
+                            step_prog = min(55, 35 + int((elapsed - 8) * 1.6))
+                        elif elapsed < 40:
                             stage = "Viral Hook & Curiosity Detection"
                             detail = f"Scanning transcript dialogue for opening hooks, punchlines, controversial takes & emotional peaks..."
-                            step_prog = min(72, 55 + int((elapsed - 12) * 2.2))
-                        elif elapsed < 30:
+                            step_prog = min(75, 55 + int((elapsed - 20) * 1.0))
+                        elif elapsed < 65:
                             stage = "Coherence & Sentence Boundary Snapping"
                             detail = f"Ensuring clip candidates start and end naturally on sentence boundaries without mid-word cuts..."
-                            step_prog = min(85, 72 + int((elapsed - 20) * 1.3))
-                        elif elapsed < 42:
+                            step_prog = min(88, 75 + int((elapsed - 40) * 0.5))
+                        elif elapsed < 90:
                             stage = "Virality Scoring & Selection"
                             display_clip_count = "all high-value" if is_auto_clip_count else f"the top {clip_range}"
                             detail = f"Calculating virality coefficients (1-100) and selecting {display_clip_count} highest potential clips..."
-                            step_prog = min(92, 85 + int((elapsed - 30) * 0.7))
+                            step_prog = min(94, 88 + int((elapsed - 65) * 0.24))
                         else:
                             stage = "Social Media Metadata Synthesis"
                             detail = f"Drafting attention-grabbing titles, social captions, and targeted hashtags ({elapsed}s)..."
-                            step_prog = min(95, 92 + min(3, int((elapsed - 42) * 0.3)))
+                            step_prog = min(96, 94 + min(2, int((elapsed - 90) * 0.07)))
 
                         overall_prog = 70 + int(step_prog * 0.28)
                         yield _sse({
