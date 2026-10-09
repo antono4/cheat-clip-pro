@@ -66,3 +66,47 @@ def test_gemini_404_degrades_to_heatmap_clips(monkeypatch):
     assert done, "expected a done event with heatmap-derived clips"
     assert len(done[0]["result"]["clips"]) > 0
     assert any(e.get("stage") == "Heatmap Fallback Mode" for e in events)
+
+
+def test_gemini_v1beta_404_retries_on_v1(monkeypatch):
+    """A 404 on v1beta is retried on v1 before giving up (Google API-version quirk)."""
+    from types import SimpleNamespace
+
+    class VersionModels:
+        def __init__(self, version):
+            self.version = version
+
+        def list(self):
+            return []
+
+        def generate_content(self, **_kwargs):
+            if self.version != "v1":
+                raise RuntimeError(
+                    "404 NOT_FOUND. {'error': {'code': 404, 'message': "
+                    "'models/gemini-2.5-flash is not found for API version v1beta'}}"
+                )
+            clip = SimpleNamespace(
+                title="t", start_time=1.0, end_time=20.0, hook_time=1.0, virality_score=90,
+                key_quotes=["q"], title_suggestion="ts", caption_suggestion="c", hashtag_suggestion="#x",
+            )
+            return SimpleNamespace(parsed=SimpleNamespace(summary="ok", clips=[clip]), text=None)
+
+    class FakeClient:
+        def __init__(self, *_args, **kwargs):
+            version = getattr(kwargs.get("http_options"), "api_version", "v1beta")
+            self.models = VersionModels(version)
+
+    monkeypatch.setattr(analyze_module.genai, "Client", FakeClient)
+
+    async def scenario():
+        response = await analyze_module.analyze_video(
+            AnalyzeRequest(url="https://www.youtube.com/watch?v=dQw4w9WgXcQ", api_key="fake-key")
+        )
+        return await _collect_events(response)
+
+    events = asyncio.run(scenario())
+
+    assert not any(e.get("error") for e in events)
+    done = [e for e in events if e.get("done")]
+    assert done, "v1 retry should produce an AI result, not a fallback"
+    assert done[0]["result"]["clips"]

@@ -284,6 +284,24 @@ def _fallback_summary(title, count, lang_code):
     return f"Analysis of \"{title}\" identifying {count} key segments. #viral #highlights"
 
 
+def _call_gemini_with_api_fallback(clients, model_name, prompt, config):
+    """Call generate_content, retrying on the next API version when a model
+    reports 404/NOT_FOUND. Google's API version can differ per key/model even
+    though models.list advertises generateContent support — a 404 from the
+    v1beta endpoint is often resolved by retrying the same model on v1.
+    """
+    last_error = None
+    for client in clients:
+        try:
+            return client.models.generate_content(model=model_name, contents=prompt, config=config)
+        except Exception as e:
+            last_error = e
+            if any(x in str(e).lower() for x in ('404', 'not found', 'not supported')):
+                continue
+            raise
+    raise last_error
+
+
 @router.post("/api/analyze")
 async def analyze_video(request: AnalyzeRequest):
     """Stream real-time progress via Server-Sent Events, then deliver the final result."""
@@ -1005,11 +1023,18 @@ async def analyze_video(request: AnalyzeRequest):
         })
 
         # ── Step 4: Gemini API call with dynamic Flash fallback models and retry ───────────
-        client = genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=120000))
-        
+        # Build one client per API version. Google's API version can differ per
+        # key/model: models.list may advertise generateContent on v1beta while the
+        # actual call 404s there, and succeeds on v1.
+        gemini_clients = [
+            genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=120000, api_version="v1beta")),
+            genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=120000, api_version="v1")),
+        ]
+        client = gemini_clients[0]
+
         # Discover all available Flash models for the user's API key
         discovered_flash = await asyncio.to_thread(get_flash_models_for_key, client)
-        
+
         # Build models_to_try (capped at top 4 to prevent prolonged delays):
         models_to_try = [requested_model]
         for fm in discovered_flash:
@@ -1059,10 +1084,9 @@ async def analyze_video(request: AnalyzeRequest):
                 
                 # Execute Gemini call with heartbeat and balanced timeout
                 task = asyncio.create_task(asyncio.to_thread(
-                    client.models.generate_content,
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
+                    _call_gemini_with_api_fallback,
+                    gemini_clients, model_name, prompt,
+                    types.GenerateContentConfig(
                         response_mime_type="application/json",
                         response_schema=VideoAnalysis,
                         temperature=0.2,

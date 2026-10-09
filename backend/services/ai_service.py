@@ -8,6 +8,7 @@ from google import genai
 from backend.config import logger
 
 KNOWN_FLASH_MODELS = [
+    'gemini-flash-latest',
     'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
     'gemini-2.0-flash',
