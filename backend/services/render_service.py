@@ -19,9 +19,28 @@ from backend.config import (
     transcribe_clip_words,
 )
 from backend.schemas.render import RenderBatchRequest, RenderSettingsModel
+from backend.utils.registry import TTLCache, register
 
-RENDER_BATCHES: Dict[str, Dict[str, Any]] = {}
-BATCH_REQUESTS: Dict[str, RenderBatchRequest] = {}
+
+def _batch_finished(batch: Any) -> bool:
+    """A render batch is evictable once it reaches a terminal overall status."""
+    try:
+        return batch.get("overall_status") in ("completed", "error")
+    except Exception:
+        return True
+
+
+def _request_finished(_request: Any) -> bool:
+    """BATCH_REQUESTS has no status; rely on TTL only (never force-evict early)."""
+    return False
+
+
+RENDER_BATCHES: Dict[str, Dict[str, Any]] = register(
+    TTLCache("RENDER_BATCHES", is_terminal=_batch_finished)
+)
+BATCH_REQUESTS: Dict[str, RenderBatchRequest] = register(
+    TTLCache("BATCH_REQUESTS", is_terminal=_request_finished)
+)
 
 
 async def render_single_batch_clip(

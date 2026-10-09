@@ -1,16 +1,25 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { HeatmapTimeline } from './components/HeatmapTimeline';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
-import { ClipStudioSection } from './components/ClipStudioSection';
 import { CookiesModal } from './components/CookiesModal';
-import { ClipTrimmerModal } from './components/ClipTrimmerModal';
 import { AppUpdateModal } from './components/AppUpdateModal';
 import { resilientFetch } from './utils/api';
 import { getStoredCookies, hasStoredCookies } from './utils/cookieUtils';
 import { extractAudioFromVideoClient } from './utils/audioExtractor';
-import { renderClipClientSide, triggerBrowserDownload } from './services/clientRenderer';
 import { useLanguage } from './locales';
 import type { AnalyzeResponse, ViralClip, RenderSettings, BatchRenderProgress } from './types';
+
+// Heavy, below-the-fold UI is code-split so the initial bundle stays small.
+const ClipStudioSection = lazy(() =>
+  import('./components/ClipStudioSection').then((m) => ({ default: m.ClipStudioSection }))
+);
+const ClipTrimmerModal = lazy(() =>
+  import('./components/ClipTrimmerModal').then((m) => ({ default: m.ClipTrimmerModal }))
+);
+
+// The FFmpeg WebAssembly renderer is heavy (~hundreds of KB) and only needed when
+// the user actually renders a clip in the browser, so load it on demand.
+const loadClientRenderer = () => import('./services/clientRenderer');
 
 // Declare YT global variables for TypeScript
 declare global {
@@ -385,7 +394,8 @@ export default function App() {
             });
           }
 
-          // Step 2: Render in client browser via WASM
+          // Step 2 & 3: Render in client browser via WASM (renderer loaded on demand)
+          const { renderClipClientSide, triggerBrowserDownload } = await loadClientRenderer();
           const blob = await renderClipClientSide({
             videoSourceUrl: rawSourceUrl,
             startTime: (sourceMode === 'upload' && uploadedVideoFile) ? clip.start_time : undefined,
@@ -4722,27 +4732,29 @@ Transcript:
       `}</style>
       {/* Embedded Clip Studio Section with side inline batch progress */}
       {result && (
-        <ClipStudioSection
-          videoUrl={result.video_url || url}
-          videoId={result.video_id}
-          allClips={result.clips}
-          markedClips={markedClipsList}
-          activeClip={activeClip}
-          onStartRender={handleStartBatchRender}
-          isRendering={isLaunchingRender}
-          onToggleMarkClip={(clip) => toggleMarkedClip(`${clip.start_time}_${clip.end_time}`)}
-          onToggleAllClips={toggleAllMarkedClips}
-          batchProgress={batchProgress}
-          onDismissProgress={() => {
-            if (batchEventSourceRef.current) {
-              batchEventSourceRef.current.close();
-              batchEventSourceRef.current = null;
-            }
-            setBatchProgress(null);
-          }}
-          onRetryClip={handleRetryBatchClip}
-          allowAppUpdates={allowAppUpdates}
-        />
+        <Suspense fallback={null}>
+          <ClipStudioSection
+            videoUrl={result.video_url || url}
+            videoId={result.video_id}
+            allClips={result.clips}
+            markedClips={markedClipsList}
+            activeClip={activeClip}
+            onStartRender={handleStartBatchRender}
+            isRendering={isLaunchingRender}
+            onToggleMarkClip={(clip) => toggleMarkedClip(`${clip.start_time}_${clip.end_time}`)}
+            onToggleAllClips={toggleAllMarkedClips}
+            batchProgress={batchProgress}
+            onDismissProgress={() => {
+              if (batchEventSourceRef.current) {
+                batchEventSourceRef.current.close();
+                batchEventSourceRef.current = null;
+              }
+              setBatchProgress(null);
+            }}
+            onRetryClip={handleRetryBatchClip}
+            allowAppUpdates={allowAppUpdates}
+          />
+        </Suspense>
       )}
 
       {/* YouTube Cookies Modal */}
@@ -4759,21 +4771,23 @@ Transcript:
       />
 
       {/* Clip Trimmer & Context Editor Modal */}
-      <ClipTrimmerModal
-        isOpen={Boolean(trimmerClip)}
-        clip={trimmerClip}
-        videoId={result?.video_id || ''}
-        videoUrl={result?.video_url}
-        sourceType={result?.source_type}
-        videoTitle={result?.title}
-        videoDuration={result?.duration || 0}
-        transcript={result?.transcript}
-        onClose={() => setTrimmerClip(null)}
-        onDownload={async (adjustedClip) => {
-          handleApplyAdjustedClipToResults(adjustedClip);
-          await handleDownloadRawClip(adjustedClip);
-        }}
-      />
+      <Suspense fallback={null}>
+        <ClipTrimmerModal
+          isOpen={Boolean(trimmerClip)}
+          clip={trimmerClip}
+          videoId={result?.video_id || ''}
+          videoUrl={result?.video_url}
+          sourceType={result?.source_type}
+          videoTitle={result?.title}
+          videoDuration={result?.duration || 0}
+          transcript={result?.transcript}
+          onClose={() => setTrimmerClip(null)}
+          onDownload={async (adjustedClip) => {
+            handleApplyAdjustedClipToResults(adjustedClip);
+            await handleDownloadRawClip(adjustedClip);
+          }}
+        />
+      </Suspense>
 
       {/* Global Fancy Clear Temp Confirmation Modal */}
       {showGlobalClearModal && (
