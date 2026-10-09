@@ -225,7 +225,7 @@ def list_available_models(api_key: str = ""):
 async def analyze_video(request: AnalyzeRequest):
     """Stream real-time progress via Server-Sent Events, then deliver the final result."""
 
-    async def stream():
+    async def _stream():
         gemini_key = (request.api_key or os.environ.get("GEMINI_API_KEY") or '').strip()
         is_mock = gemini_key.lower() == "mock"
 
@@ -1357,6 +1357,31 @@ async def analyze_video(request: AnalyzeRequest):
         )
 
         yield _sse({"done": True, "result": final_result.model_dump()})
+
+    async def stream():
+        """Yield SSE chunks from the pipeline, surfacing any failure as an error event.
+
+        Without this guard an exception raised mid-analysis closes the stream with
+        no event, so the client only sees an aborted connection.
+        """
+        try:
+            async for chunk in _stream():
+                yield chunk
+        except asyncio.CancelledError:
+            logger.info("Analysis stream cancelled by client disconnect.")
+            raise
+        except HTTPException as e:
+            logger.warning(f"Analysis aborted: {e.detail}")
+            yield _sse({"error": str(e.detail), "status": e.status_code})
+        except Exception as e:
+            logger.error(f"Analysis stream failed: {e}", exc_info=True)
+            yield _sse({
+                "error": (
+                    "The analysis stream stopped unexpectedly on the server. "
+                    f"Details: {e}. Please try again."
+                ),
+                "status": 500,
+            })
 
     return StreamingResponse(
         stream(),
