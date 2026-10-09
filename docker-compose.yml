@@ -18,10 +18,9 @@ services:
       - SUPADATA_API_KEYS=${SUPADATA_API_KEYS:-}
       - WEBSHARE_PROXY=${WEBSHARE_PROXY:-}
     volumes:
-      - media_temp:/app/temp
-      - media_uploads:/app/uploads
-      - media_exports:/app/exports
-      - custom_fonts:/app/fonts
+      - media_temp:/app/backend/temp_clips
+      - media_exports:/app/backend/exports
+      - custom_fonts:/app/backend/fonts
     deploy:
       resources:
         limits:
@@ -29,6 +28,5 @@ services:
 
 volumes:
   media_temp:
-  media_uploads:
   media_exports:
   custom_fonts:

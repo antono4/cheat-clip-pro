@@ -302,12 +302,15 @@ def is_server_environment() -> bool:
     - Docker container (/.dockerenv, DOCKER_CONTAINER=true, DOKPLOY, etc.)
     - Cloud hosting (VERCEL, RENDER, FLY_ALLOC_ID, RAILWAY_ENVIRONMENT, etc.)
     - Explicit SERVER_MODE=true or ENVIRONMENT=production
+    - Publicly bound socket (HOST=0.0.0.0 or ::), which indicates a shared/remote deployment
     """
     if os.environ.get("SERVER_MODE", "").lower() in ("1", "true", "yes"):
         return True
     if os.environ.get("ENVIRONMENT", "").lower() == "production" or os.environ.get("NODE_ENV", "").lower() == "production":
         return True
     if os.path.exists("/.dockerenv") or os.environ.get("DOCKER_CONTAINER", "").lower() in ("1", "true", "yes"):
+        return True
+    if os.environ.get("HOST", "").strip() in ("0.0.0.0", "::"):
         return True
     if any(os.environ.get(k) for k in ("DOKPLOY", "VERCEL", "RENDER", "FLY_ALLOC_ID", "RAILWAY_ENVIRONMENT", "AWS_LAMBDA_FUNCTION_NAME")):
         return True

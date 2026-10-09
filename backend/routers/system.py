@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from backend.config import _base_dir, logger
 from backend.services.system_service import (
@@ -24,24 +24,42 @@ router = APIRouter(tags=["System"])
 
 
 def verify_admin_access(
+    request: Request,
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
     authorization: Optional[str] = Header(None)
 ) -> bool:
     """
-    Verifies administrative authorization.
-    If ADMIN_API_KEY or CHEAT_CLIP_API_KEY is configured in .env, requires matching token.
-    If no secret key is set, allows open access for local desktop installation.
+    Verifies administrative authorization for destructive system endpoints.
+
+    - If ADMIN_API_KEY / CHEAT_CLIP_API_KEY is configured, the request MUST present a matching token.
+    - If no key is configured, access is allowed ONLY for local desktop installs (loopback client,
+      not a server/container environment). In a server environment without a configured key,
+      access is denied by default to prevent unauthenticated remote update/restart/cleanup.
     """
     admin_key = (os.environ.get("ADMIN_API_KEY") or os.environ.get("CHEAT_CLIP_API_KEY") or "").strip()
-    if not admin_key:
-        return True
 
     provided = (x_api_key or "").strip()
     if not provided and authorization and authorization.startswith("Bearer "):
         provided = authorization[7:].strip()
 
-    if provided != admin_key:
-        raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing administrator API key")
+    if admin_key:
+        if provided != admin_key:
+            raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing administrator API key")
+        return True
+
+    # No admin key configured: only permit verified-local, non-server installs.
+    if is_server_environment():
+        raise HTTPException(
+            status_code=403,
+            detail="Administrative API key is not configured. Refusing unauthenticated system operations in server mode."
+        )
+
+    client_host = (request.client.host if request.client else "") or ""
+    if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrative operations are restricted to local requests. Configure ADMIN_API_KEY to allow remote access."
+        )
     return True
 
 

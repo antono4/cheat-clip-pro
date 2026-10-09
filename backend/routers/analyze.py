@@ -32,6 +32,7 @@ from backend.services.ai_service import (
     get_flash_models_for_key,
     list_available_gemini_models,
 )
+from backend.routers.media import _find_video_file_on_disk, _is_safe_path
 from backend.services.gdrive_service import (
     download_google_drive_video,
     is_google_drive_url,
@@ -277,30 +278,30 @@ async def analyze_video(request: AnalyzeRequest):
             except Exception as e:
                 yield _sse({"error": f"Failed to fetch video from Google Drive: {str(e)}", "status": 400})
                 return
-        elif req_clean.startswith("upload_") or req_clean.startswith("/api/video/") or req_clean.startswith("file://") or os.path.exists(req_clean):
-            is_uploaded = True
-        elif (UPLOADS_DIR / os.path.basename(req_clean.split("?")[0])).exists():
+        elif req_clean.startswith("upload_") or req_clean.startswith("/api/video/") or req_clean.startswith("file://"):
             is_uploaded = True
         else:
-            matches = list(UPLOADS_DIR.glob(f"*{req_clean}*"))
-            if matches:
+            # Resolve against known media directories only (never arbitrary server paths).
+            candidate_name = os.path.basename(req_clean.split("?")[0])
+            if any((base / candidate_name).exists() for base in (UPLOADS_DIR, TEMP_DIR)):
                 is_uploaded = True
 
         if is_uploaded:
             if uploaded_file_path is None:
-                if os.path.exists(req_clean):
-                    uploaded_file_path = Path(req_clean)
-                elif (UPLOADS_DIR / os.path.basename(req_clean.split("?")[0])).exists():
-                    uploaded_file_path = UPLOADS_DIR / os.path.basename(req_clean.split("?")[0])
-                elif (TEMP_DIR / os.path.basename(req_clean.split("?")[0])).exists():
-                    uploaded_file_path = TEMP_DIR / os.path.basename(req_clean.split("?")[0])
-                else:
-                    matches = list(UPLOADS_DIR.glob(f"*{req_clean}*"))
-                    if matches:
-                        uploaded_file_path = matches[0]
-                    else:
-                        yield _sse({"error": "Uploaded video file not found on disk. Please upload again.", "status": 404})
-                        return
+                candidate_name = os.path.basename(req_clean.split("?")[0])
+                if req_clean.startswith("file://"):
+                    candidate_name = os.path.basename(req_clean[7:])
+
+                uploaded_file_path = _find_video_file_on_disk(candidate_name)
+                if not uploaded_file_path:
+                    # Only honour absolute paths that live inside the managed media directories.
+                    if os.path.exists(req_clean):
+                        abs_candidate = Path(req_clean)
+                        if _is_safe_path(abs_candidate):
+                            uploaded_file_path = abs_candidate
+                if not uploaded_file_path:
+                    yield _sse({"error": "Uploaded video file not found on disk. Please upload again.", "status": 404})
+                    return
 
             video_id = uploaded_file_path.stem
             canonical_url = req_clean if is_gdrive else f"/api/video/{uploaded_file_path.name}"

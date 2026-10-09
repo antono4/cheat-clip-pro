@@ -94,9 +94,9 @@ export async function renderClipClientSide(options: ClientRenderOptions): Promis
   await ffmpeg.writeFile('input.mp4', inputData);
 
   // Construct FFmpeg filters based on aspect ratio and background style
-  let filterStr = '';
-  let targetWidth = 1080;
-  let targetHeight = 1920;
+  let filterStr: string;
+  let targetWidth: number;
+  let targetHeight: number;
 
   if (aspectRatio === '9:16') {
     targetWidth = 1080;
@@ -106,8 +106,8 @@ export async function renderClipClientSide(options: ClientRenderOptions): Promis
     } else if (backgroundStyle === 'black') {
       filterStr = `[0:v]scale=${targetWidth}:${targetHeight}:force_original_aspect_ratio=decrease,pad=${targetWidth}:${targetHeight}:(ow-iw)/2:(oh-ih)/2:black[v]`;
     } else {
-      // Direct center crop
-      filterStr = `[0:v]scale=ih*9/16:ih,scale=${targetWidth}:${targetHeight}[v]`;
+      // Direct center crop to 9:16 (even dimensions required by libx264)
+      filterStr = `[0:v]crop=trunc(ih*9/16/2)*2:ih,scale=${targetWidth}:${targetHeight}[v]`;
     }
   } else if (aspectRatio === '1:1') {
     targetWidth = 1080;

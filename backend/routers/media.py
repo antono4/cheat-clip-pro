@@ -133,51 +133,56 @@ async def upload_video(
 def _find_video_file_on_disk(file_name: str) -> Optional[Path]:
     import urllib.parse
     clean_name = urllib.parse.unquote(os.path.basename(file_name.split("?")[0])).strip()
-    
-    # Check direct paths
+    if not clean_name:
+        return None
+
+    # 1. Direct path (guarded by _is_safe_path)
     for base in [UPLOADS_DIR, TEMP_DIR, EXPORTS_DIR]:
         candidate = base / clean_name
         if candidate.exists() and candidate.is_file() and _is_safe_path(candidate):
             return candidate
 
-    # Search directory listings without regex/glob pitfalls
     all_files: list[Path] = []
     for d in [UPLOADS_DIR, TEMP_DIR, EXPORTS_DIR]:
         if d.exists():
             all_files.extend([f for f in d.iterdir() if f.is_file() and _is_safe_path(f)])
 
     clean_lower = clean_name.lower()
-    
-    # 1. Exact case-insensitive match
+
+    # 2. Exact case-insensitive filename match
     for f in all_files:
         if f.name.lower() == clean_lower:
             return f
 
-    # 2. Match without extension
+    # 3. Exact stem match (request without extension)
     stem_lower = os.path.splitext(clean_lower)[0]
     for f in all_files:
-        if f.stem.lower() == stem_lower or f.stem.lower() == clean_lower:
+        if f.stem.lower() == stem_lower:
             return f
 
-    # 3. Match Google Drive or Upload ID substring
-    drive_match = re.search(r'([a-zA-Z0-9_-]{20,})', clean_name)
-    if drive_match:
-        fid = drive_match.group(1)
-        for f in all_files:
-            if fid in f.name:
-                return f
+    def _most_recent(matches: list[Path]) -> Optional[Path]:
+        if not matches:
+            return None
+        try:
+            return max(matches, key=lambda p: p.stat().st_mtime)
+        except OSError:
+            return matches[0]
 
-    upload_match = re.search(r'(upload_[a-zA-Z0-9]{6,})', clean_name)
-    if upload_match:
-        uid = upload_match.group(1)
-        for f in all_files:
-            if uid in f.name:
-                return f
-
-    # 4. Containment matching
-    for f in all_files:
-        if clean_lower in f.name.lower() or f.stem.lower() in clean_lower:
-            return f
+    # 4. Server-issued upload ID: file is saved as "<upload_id>_<clean_name>"
+    #    (or "<upload_id>.<ext>" for gdrive). Only accept a strict ID-prefix
+    #    boundary followed by "_" or "." to avoid ambiguous substring matches.
+    for prefix in ("upload_", "gdrive_"):
+        if clean_lower.startswith(prefix):
+            exact_prefix = []
+            for f in all_files:
+                name_lower = f.name.lower()
+                if name_lower == clean_lower:
+                    return f
+                if name_lower.startswith(clean_lower) and name_lower[len(clean_lower):len(clean_lower) + 1] in ("_", "."):
+                    exact_prefix.append(f)
+            resolved = _most_recent(exact_prefix)
+            if resolved:
+                return resolved
 
     return None
 
