@@ -221,6 +221,69 @@ def list_available_models(api_key: str = ""):
     return {"models": models}
 
 
+def _build_heatmap_fallback_clips(enriched_transcript, duration, duration_mode, lang_code):
+    """Synthesize clip candidates purely from heatmap engagement + transcript.
+
+    Used when the Gemini models are unavailable for a key (region/quota/retired
+    model), so the user still gets usable clips instead of a hard failure.
+    """
+    if not enriched_transcript:
+        return []
+
+    sorted_lines = sorted(enriched_transcript, key=lambda l: l.get('engagement', 0.0), reverse=True)
+    candidate_starts = []
+    for l in sorted_lines:
+        s = l['start']
+        if not any(abs(s - existing) < 25.0 for existing in candidate_starts):
+            candidate_starts.append(s)
+        if len(candidate_starts) >= 5:
+            break
+
+    auto_lens = [25.0, 45.0, 75.0, 35.0, 60.0, 85.0, 20.0, 50.0]
+    labels = {
+        'id': ("Momen Menarik #{n}", "Cuplikan Pilihan #{n}", "Momen terbaik dari video: {p} #viral #trending"),
+        'es': ("Momento Destacado #{n}", "Momento Imperdible #{n}", "Momento clave del video: {p} #viral #trending"),
+    }
+    title_tpl, sug_tpl, cap_tpl = labels.get(
+        lang_code, ("Key Highlight #{n}", "Must Watch Moment #{n}", "Key highlight from video: {p} #viral #trending")
+    )
+
+    clips = []
+    for i, st in enumerate(candidate_starts):
+        if duration_mode == "15s":
+            target_len = 15.0
+        elif duration_mode == "60s":
+            target_len = 60.0
+        elif duration_mode == "auto":
+            target_len = auto_lens[i % len(auto_lens)]
+        else:
+            target_len = 30.0
+        et = min(duration, st + min(90.0, target_len))
+        seg_lines = [l['text'] for l in enriched_transcript if max(l['start'], st) < min(l['end'], et)]
+        seg_text = " ".join(seg_lines).strip()
+        preview = seg_text[:60] + "..." if len(seg_text) > 60 else (seg_text or f"Viral Highlight #{i+1}")
+        clips.append({
+            "title": title_tpl.format(n=i + 1),
+            "start_time": st,
+            "end_time": et,
+            "hook_time": st,
+            "virality_score": max(70, int(95 - i * 5)),
+            "key_quotes": [seg_text[:80]] if seg_text else [],
+            "title_suggestion": sug_tpl.format(n=i + 1),
+            "caption_suggestion": cap_tpl.format(p=preview),
+            "hashtag_suggestion": "#viral #shorts #trending",
+        })
+    return clips
+
+
+def _fallback_summary(title, count, lang_code):
+    if lang_code == 'id':
+        return f"Analisis video \"{title}\" menemukan {count} segmen cuplikan pilihan. #viral #highlights"
+    if lang_code == 'es':
+        return f"Análisis de \"{title}\" identificando {count} segmentos clave. #viral #highlights"
+    return f"Analysis of \"{title}\" identifying {count} key segments. #viral #highlights"
+
+
 @router.post("/api/analyze")
 async def analyze_video(request: AnalyzeRequest):
     """Stream real-time progress via Server-Sent Events, then deliver the final result."""
@@ -1151,116 +1214,69 @@ async def analyze_video(request: AnalyzeRequest):
                     "message": f"{model_name} {err_summary} — switching to flash fallback model {next_model_hint}..."
                 })
 
+        # No model produced a usable analysis. Degrade gracefully: build clips
+        # from heatmap engagement + transcript so the user still gets results,
+        # and report why AI was skipped.
         if analysis_data is None:
-            # If any model in the fallback chain suffered quota exhaustion, prioritize showing the quota explanation
             error_to_report = encountered_quota_error or last_error
-            if error_to_report is not None:
-                err_str = str(error_to_report).lower()
-                if any(x in err_str for x in ('429', 'quota', 'resource exhausted', 'rate limit')):
-                    yield _sse({
-                        "error": "Quota limit reached across all available Gemini Flash models for this API key. Free keys have a request limit per minute. Please change your API key, generate a fresh free key at aistudio.google.com, or wait 30–60 seconds before trying again.",
-                        "status": 429
-                    })
-                elif any(x in err_str for x in ('503', 'unavailable', 'overloaded')):
-                    yield _sse({
-                        "error": "Google Gemini servers are currently experiencing high demand across all Flash models. Please change to a different Gemini API key or wait a few moments and try again.",
-                        "status": 503
-                    })
-                elif any(x in err_str for x in ('401', '403', 'api_key', 'invalid', 'permission')):
-                    yield _sse({
-                        "error": "Invalid or restricted Gemini API key. Please change your API key or generate a new free key at aistudio.google.com.",
-                        "status": 401
-                    })
-                elif any(x in err_str for x in ('404', 'not found', 'not supported')):
-                    models_preview = ', '.join(models_to_try[:3])
-                    yield _sse({
-                        "error": f"All tested Gemini Flash models ({models_preview}...) were unavailable or not supported for this API key. Please change your Gemini API key or generate a new one at aistudio.google.com.",
-                        "status": 404
-                    })
-                else:
-                    logger.error(f"Gemini error after all fallback models: {error_to_report}")
-                    yield _sse({
-                        "error": f"AI analysis failed across all available Flash models ({str(error_to_report)}). Please change your Gemini API key or try again in a few moments.",
-                        "status": 500
-                    })
+            err_str = str(error_to_report or "").lower()
+            if any(x in err_str for x in ('429', 'quota', 'resource exhausted', 'rate limit')):
+                status_code = 429
+                reason = ("Quota limit reached for this Gemini API key. Free keys allow only a few requests "
+                          "per minute; wait 30-60 seconds or use a fresh key from aistudio.google.com.")
+            elif any(x in err_str for x in ('401', '403', 'api_key', 'invalid', 'permission')):
+                status_code = 401
+                reason = ("Invalid or restricted Gemini API key. Verify your key or generate a new free key "
+                          "at aistudio.google.com.")
+            elif any(x in err_str for x in ('404', 'not found', 'not supported')):
+                status_code = 404
+                reason = ("The Gemini Flash models are not available for this key (unsupported region, retired "
+                          "model, or the 'Generative Language API' is disabled for the Google Cloud project).")
+            elif any(x in err_str for x in ('503', 'unavailable', 'overloaded')):
+                status_code = 503
+                reason = "Google Gemini servers are currently overloaded."
+            elif error_to_report is not None:
+                status_code = 500
+                reason = f"Gemini analysis failed: {error_to_report}"
             else:
+                status_code = 500
+                reason = "No response was received from the Gemini models."
+
+            heatmap_clips = _build_heatmap_fallback_clips(
+                enriched_transcript, duration, request.duration, lang_code
+            )
+            if heatmap_clips:
+                logger.warning(
+                    f"All Gemini models failed ({reason}). Falling back to {len(heatmap_clips)} heatmap-based clips."
+                )
+                analysis_data = {
+                    "summary": _fallback_summary(title, len(heatmap_clips), lang_code),
+                    "clips": heatmap_clips,
+                }
+                successful_model = f"{requested_model} (heatmap fallback)"
                 yield _sse({
-                    "error": "No response received after trying all available Gemini Flash models. Please change your Gemini API key or try again in a few moments.",
-                    "status": 500
+                    "step": 4,
+                    "step_progress": 96,
+                    "overall_progress": 96,
+                    "stage": "Heatmap Fallback Mode",
+                    "detail": f"Gemini unavailable — generated {len(heatmap_clips)} clips from heatmap engagement.",
+                    "model": successful_model,
+                    "message": f"Gemini unavailable, using heatmap-based clips. {reason}"
                 })
-            return
+            else:
+                logger.error(f"Gemini analysis failed and no transcript was available: {error_to_report}")
+                yield _sse({"error": reason, "status": status_code})
+                return
 
         # Fallback clip synthesis if 0 clips were returned after all models
         if len(analysis_data.get('clips', [])) == 0 and enriched_transcript:
             logger.info("Generating fallback clips from heatmap and transcript segments...")
-            sorted_lines = sorted(enriched_transcript, key=lambda l: l.get('engagement', 0.0), reverse=True)
-            candidate_starts = []
-            for l in sorted_lines:
-                s = l['start']
-                if not any(abs(s - existing) < 25.0 for existing in candidate_starts):
-                    candidate_starts.append(s)
-                if len(candidate_starts) >= 5:
-                    break
-            
-            fallback_clips_list = []
-            for i, st in enumerate(candidate_starts):
-                if request.duration == "15s":
-                    target_len = 15.0
-                elif request.duration == "60s":
-                    target_len = 60.0
-                elif request.duration == "auto":
-                    auto_lens = [25.0, 45.0, 75.0, 35.0, 60.0, 85.0, 20.0, 50.0]
-                    target_len = auto_lens[i % len(auto_lens)]
-                else:
-                    target_len = 30.0
-                et = min(duration, st + min(90.0, target_len))
-                seg_lines = [l['text'] for l in enriched_transcript if max(l['start'], st) < min(l['end'], et)]
-                seg_text = " ".join(seg_lines).strip()
-                preview = seg_text[:60] + "..." if len(seg_text) > 60 else seg_text or f"Viral Highlight #{i+1}"
-                if lang_code == 'id':
-                    fallback_clips_list.append({
-                        "title": f"Momen Menarik #{i+1}",
-                        "start_time": st,
-                        "end_time": et,
-                        "hook_time": st,
-                        "virality_score": max(70, int(95 - i * 5)),
-                        "key_quotes": [seg_text[:80]] if seg_text else [],
-                        "title_suggestion": f"Cuplikan Pilihan #{i+1}",
-                        "caption_suggestion": f"Momen terbaik dari video: {preview} #viral #trending",
-                        "hashtag_suggestion": "#viral #shorts #trending"
-                    })
-                elif lang_code == 'es':
-                    fallback_clips_list.append({
-                        "title": f"Momento Destacado #{i+1}",
-                        "start_time": st,
-                        "end_time": et,
-                        "hook_time": st,
-                        "virality_score": max(70, int(95 - i * 5)),
-                        "key_quotes": [seg_text[:80]] if seg_text else [],
-                        "title_suggestion": f"Momento Imperdible #{i+1}",
-                        "caption_suggestion": f"Momento clave del video: {preview} #viral #trending",
-                        "hashtag_suggestion": "#viral #shorts #trending"
-                    })
-                else:
-                    fallback_clips_list.append({
-                        "title": f"Key Highlight #{i+1}",
-                        "start_time": st,
-                        "end_time": et,
-                        "hook_time": st,
-                        "virality_score": max(70, int(95 - i * 5)),
-                        "key_quotes": [seg_text[:80]] if seg_text else [],
-                        "title_suggestion": f"Must Watch Moment #{i+1}",
-                        "caption_suggestion": f"Key highlight from video: {preview} #viral #trending",
-                        "hashtag_suggestion": "#viral #shorts #trending"
-                    })
+            fallback_clips_list = _build_heatmap_fallback_clips(
+                enriched_transcript, duration, request.duration, lang_code
+            )
             analysis_data['clips'] = fallback_clips_list
             if not analysis_data.get('summary'):
-                if lang_code == 'id':
-                    analysis_data['summary'] = f"Analisis video \"{title}\" menemukan {len(fallback_clips_list)} segmen cuplikan pilihan. #viral #highlights"
-                elif lang_code == 'es':
-                    analysis_data['summary'] = f"Análisis de \"{title}\" identificando {len(fallback_clips_list)} segmentos clave. #viral #highlights"
-                else:
-                    analysis_data['summary'] = f"Analysis of \"{title}\" identifying {len(fallback_clips_list)} key segments. #viral #highlights"
+                analysis_data['summary'] = _fallback_summary(title, len(fallback_clips_list), lang_code)
 
         clip_count = len(analysis_data.get('clips', []))
         yield _sse({
