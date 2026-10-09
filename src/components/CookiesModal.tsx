@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../locales';
+import {
+  getStoredCookies,
+  setStoredCookies,
+  removeStoredCookies,
+  hasStoredCookies,
+  getStoredCookiesSize,
+  getCookieDomainSamples,
+  normalizeCookies,
+} from '../utils/cookieUtils';
 
 interface CookiesModalProps {
   isOpen: boolean;
@@ -14,100 +23,109 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
 }) => {
   const { t } = useLanguage();
   const [cookieText, setCookieText] = useState<string>('');
-  const [hasCookies, setHasCookies] = useState<boolean>(false);
+  const [isCookieActive, setIsCookieActive] = useState<boolean>(false);
   const [cookieSize, setCookieSize] = useState<number>(0);
   const [sampleLines, setSampleLines] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
-  const fetchStatus = async () => {
-    try {
-      const res = await fetch('/api/cookies');
-      const data = await res.json();
-      setHasCookies(data.exists);
-      setCookieSize(data.size || 0);
-      setSampleLines(data.sample_lines || []);
-      if (data.cookies_content) {
-        setCookieText(data.cookies_content);
-      } else if (!data.exists) {
-        setCookieText('');
-      }
-      if (onCookieStatusChange) {
-        onCookieStatusChange(data.exists);
-      }
-    } catch {
-      // Backend might not be reachable yet
+  const loadStatus = () => {
+    const raw = getStoredCookies();
+    const active = hasStoredCookies();
+    const size = getStoredCookiesSize();
+    const samples = getCookieDomainSamples(raw);
+
+    setIsCookieActive(active);
+    setCookieSize(size);
+    setSampleLines(samples);
+    setCookieText(raw);
+
+    if (onCookieStatusChange) {
+      onCookieStatusChange(active);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      fetchStatus();
+      loadStatus();
       setMessage(null);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const readFileContent = (file: File) => {
     const reader = new FileReader();
     reader.onload = (event) => {
-      const content = event.target?.result as string;
-      setCookieText(content || '');
-      setMessage({
-        text: t.cookies.fileLoadedInfo(file.name, (content.length / 1024).toFixed(1)),
-        type: 'info'
-      });
+      const buffer = event.target?.result as ArrayBuffer;
+      if (!buffer) return;
+      const bytes = new Uint8Array(buffer);
+      let encoding = 'utf-8';
+      if (bytes.length >= 2) {
+        if (bytes[0] === 0xFF && bytes[1] === 0xFE) {
+          encoding = 'utf-16le';
+        } else if (bytes[0] === 0xFE && bytes[1] === 0xFF) {
+          encoding = 'utf-16be';
+        } else if (bytes[1] === 0x00) {
+          encoding = 'utf-16le';
+        }
+      }
+      try {
+        const decoder = new TextDecoder(encoding);
+        const content = decoder.decode(bytes).replace(/\ufeff/g, '').replace(/\0/g, '');
+        setCookieText(content);
+        setMessage({
+          text: t.cookies.fileLoadedInfo(file.name, (content.length / 1024).toFixed(1)),
+          type: 'info'
+        });
+      } catch (err: any) {
+        setMessage({ text: `Failed to read file: ${err.message}`, type: 'error' });
+      }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
-  const handleSave = async () => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) readFileContent(file);
+  };
+
+  const handleSave = () => {
     if (!cookieText.trim()) {
       setMessage({ text: t.cookies.emptyError, type: 'error' });
       return;
     }
     setIsLoading(true);
     setMessage(null);
+
     try {
-      const res = await fetch('/api/cookies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cookies_content: cookieText }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setMessage({ text: t.cookies.saveSuccess, type: 'success' });
-        fetchStatus();
-      } else {
-        setMessage({ text: data.detail || t.cookies.saveFailed, type: 'error' });
+      const normalized = normalizeCookies(cookieText);
+      if (!normalized || normalized.trim().length < 10) {
+        setMessage({ text: t.cookies.emptyError, type: 'error' });
+        setIsLoading(false);
+        return;
       }
+
+      setStoredCookies(normalized);
+      loadStatus();
+      setMessage({ text: t.cookies.saveSuccess, type: 'success' });
     } catch (err: any) {
-      setMessage({ text: err.message || t.cookies.networkError, type: 'error' });
+      setMessage({ text: err.message || t.cookies.saveFailed, type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const executeDeleteCookies = async () => {
+  const executeDeleteCookies = () => {
     setIsLoading(true);
     setMessage(null);
     try {
-      const res = await fetch('/api/cookies', {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setMessage({ text: t.cookies.deletedSuccess, type: 'info' });
-        fetchStatus();
-      } else {
-        setMessage({ text: data.detail || t.cookies.removeFailed, type: 'error' });
-      }
+      removeStoredCookies();
+      loadStatus();
+      setMessage({ text: t.cookies.deletedSuccess, type: 'info' });
     } catch (err: any) {
-      setMessage({ text: err.message || t.cookies.networkError, type: 'error' });
+      setMessage({ text: err.message || t.cookies.removeFailed, type: 'error' });
     } finally {
       setIsLoading(false);
       setShowDeleteConfirm(false);
@@ -124,8 +142,8 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
             <div>
               <div className="studio-title-row">
                 <h2>{t.cookies.modalTitle}</h2>
-                <span className={`status-pill ${hasCookies ? 'active' : 'inactive'}`}>
-                  {hasCookies ? t.cookies.statusActive : t.cookies.statusInactive}
+                <span className={`status-pill ${isCookieActive ? 'active' : 'inactive'}`}>
+                  {isCookieActive ? t.cookies.statusActive : t.cookies.statusInactive}
                 </span>
               </div>
               <p className="studio-header-desc">
@@ -142,7 +160,7 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
         <div className="cookies-modal-scrollable">
           {/* Status banner */}
           <div className="cookies-status-section">
-            {hasCookies ? (
+            {isCookieActive ? (
               <div className="cookie-status-box active">
                 <span className="status-icon">🛡️</span>
                 <div className="status-info">
@@ -203,7 +221,7 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
                 {t.cookies.chooseFile}
                 <input
                   type="file"
-                  accept=".txt"
+                  accept=".txt,.json,text/plain,application/json"
                   onChange={handleFileUpload}
                   style={{ display: 'none' }}
                 />
@@ -214,9 +232,19 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
             <textarea
               className="cookies-textarea"
               rows={7}
-              placeholder={`# Netscape HTTP Cookie File\n# http://curl.haxx.se/rfc/cookie_spec.html\n.youtube.com\tTRUE\t/\tTRUE\t1750000000\tSID\t...\n.youtube.com\tTRUE\t/\tTRUE\t1750000000\tHSID\t...`}
+              placeholder={`# Netscape HTTP Cookie File (.txt) or JSON format (.json):\n# http://curl.haxx.se/rfc/cookie_spec.html\n.youtube.com\tTRUE\t/\tTRUE\t1750000000\tSID\t...\n\n# Or paste JSON format from Cookie-Editor / EditThisCookie:\n[{"domain": ".youtube.com", "name": "SID", "value": "..."}]`}
               value={cookieText}
               onChange={(e) => setCookieText(e.target.value)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const file = e.dataTransfer.files?.[0];
+                if (file) readFileContent(file);
+              }}
             />
 
             <div className="cookies-guide-card">
@@ -256,7 +284,7 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
           </button>
         </div>
 
-        {/* Fancy Clear Cookies Confirmation Modal */}
+        {/* Clear Cookies Confirmation Modal */}
         {showDeleteConfirm && (
           <div className="custom-confirm-modal-overlay" style={{ zIndex: 10005 }}>
             <div className="custom-confirm-modal-card">
