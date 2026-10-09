@@ -20,6 +20,8 @@ from backend.config import (
     is_valid_mp4,
     logger,
 )
+from backend.utils.media_paths import is_safe_path as _is_safe_path
+from backend.utils.media_paths import find_video_file_on_disk as _find_video_file_on_disk
 
 router = APIRouter(tags=["Media"])
 
@@ -31,41 +33,39 @@ MAX_IMAGE_UPLOAD_BYTES = 25 * 1024 * 1024         # 25 MB
 MAX_FONT_UPLOAD_BYTES = 50 * 1024 * 1024          # 50 MB
 
 
-def _is_safe_path(target_path: Path) -> bool:
-    """Ensures the resolved file path is strictly located within allowed media directories."""
-    try:
-        resolved = target_path.resolve()
-        allowed_roots = [UPLOADS_DIR.resolve(), TEMP_DIR.resolve(), EXPORTS_DIR.resolve(), FONTS_DIR.resolve()]
-        return any(resolved == root or resolved.is_relative_to(root) for root in allowed_roots)
-    except Exception:
-        return False
-
-
 async def _save_uploaded_file_chunked(file: UploadFile, save_path: Path, max_bytes: int) -> int:
     """
     Streams upload content in 1MB chunks to disk while enforcing a strict maximum size limit
-    to prevent memory exhaustion (OOM) and disk flood attacks.
+    to prevent memory exhaustion (OOM) and disk flood attacks. Disk writes run in a worker
+    thread so large uploads never block the event loop.
     """
+    import anyio
+
     total_written = 0
     chunk_size = 1024 * 1024  # 1 MB
+    handle = await anyio.to_thread.run_sync(lambda: open(save_path, "wb"))
     try:
-        with open(save_path, "wb") as f:
-            while chunk := await file.read(chunk_size):
-                total_written += len(chunk)
-                if total_written > max_bytes:
-                    f.close()
-                    if save_path.exists():
-                        save_path.unlink()
-                    limit_mb = round(max_bytes / (1024 * 1024))
-                    raise HTTPException(
-                        status_code=413,
-                        detail=f"Uploaded file exceeds the maximum allowed size limit of {limit_mb} MB."
-                    )
-                f.write(chunk)
+        while chunk := await file.read(chunk_size):
+            total_written += len(chunk)
+            if total_written > max_bytes:
+                await anyio.to_thread.run_sync(handle.close)
+                if save_path.exists():
+                    save_path.unlink()
+                limit_mb = round(max_bytes / (1024 * 1024))
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"Uploaded file exceeds the maximum allowed size limit of {limit_mb} MB."
+                )
+            await anyio.to_thread.run_sync(handle.write, chunk)
+        await anyio.to_thread.run_sync(handle.close)
         return total_written
     except HTTPException:
         raise
     except Exception as e:
+        try:
+            await anyio.to_thread.run_sync(handle.close)
+        except Exception:
+            pass
         if save_path.exists():
             try:
                 save_path.unlink()
@@ -128,63 +128,6 @@ async def upload_video(
     except Exception as e:
         logger.error(f"Failed to upload video: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to process video upload: {str(e)}")
-
-
-def _find_video_file_on_disk(file_name: str) -> Optional[Path]:
-    import urllib.parse
-    clean_name = urllib.parse.unquote(os.path.basename(file_name.split("?")[0])).strip()
-    if not clean_name:
-        return None
-
-    # 1. Direct path (guarded by _is_safe_path)
-    for base in [UPLOADS_DIR, TEMP_DIR, EXPORTS_DIR]:
-        candidate = base / clean_name
-        if candidate.exists() and candidate.is_file() and _is_safe_path(candidate):
-            return candidate
-
-    all_files: list[Path] = []
-    for d in [UPLOADS_DIR, TEMP_DIR, EXPORTS_DIR]:
-        if d.exists():
-            all_files.extend([f for f in d.iterdir() if f.is_file() and _is_safe_path(f)])
-
-    clean_lower = clean_name.lower()
-
-    # 2. Exact case-insensitive filename match
-    for f in all_files:
-        if f.name.lower() == clean_lower:
-            return f
-
-    # 3. Exact stem match (request without extension)
-    stem_lower = os.path.splitext(clean_lower)[0]
-    for f in all_files:
-        if f.stem.lower() == stem_lower:
-            return f
-
-    def _most_recent(matches: list[Path]) -> Optional[Path]:
-        if not matches:
-            return None
-        try:
-            return max(matches, key=lambda p: p.stat().st_mtime)
-        except OSError:
-            return matches[0]
-
-    # 4. Server-issued upload ID: file is saved as "<upload_id>_<clean_name>"
-    #    (or "<upload_id>.<ext>" for gdrive). Only accept a strict ID-prefix
-    #    boundary followed by "_" or "." to avoid ambiguous substring matches.
-    for prefix in ("upload_", "gdrive_"):
-        if clean_lower.startswith(prefix):
-            exact_prefix = []
-            for f in all_files:
-                name_lower = f.name.lower()
-                if name_lower == clean_lower:
-                    return f
-                if name_lower.startswith(clean_lower) and name_lower[len(clean_lower):len(clean_lower) + 1] in ("_", "."):
-                    exact_prefix.append(f)
-            resolved = _most_recent(exact_prefix)
-            if resolved:
-                return resolved
-
-    return None
 
 
 @router.get("/api/video/{file_name:path}")

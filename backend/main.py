@@ -46,6 +46,7 @@ from backend.services.render_service import (
     RENDER_BATCHES,
 )
 from backend.services.system_service import auto_cleanup_expired_files
+from backend.utils.registry import prune_all_registries
 
 
 async def background_storage_cleanup_worker():
@@ -53,6 +54,7 @@ async def background_storage_cleanup_worker():
     Background worker that runs every 30 minutes (configurable via CLEANUP_INTERVAL_SECONDS):
     1. Option 1: TTL cleanup (files older than 1 hour / TEMP_MAX_AGE_SECONDS).
     2. Option 2: 5GB Max Quota ceiling (FIFO purge oldest files down to 80% if quota exceeded).
+    3. Prune finished/expired in-memory job & render-batch registries.
     """
     # Initial pause on startup
     await asyncio.sleep(15)
@@ -64,6 +66,13 @@ async def background_storage_cleanup_worker():
             auto_cleanup_expired_files(max_age_seconds=ttl_seconds, max_storage_bytes=max_quota_bytes)
         except Exception as e:
             logger.warning(f"[Auto-Cleanup] Background worker encountered an error: {e}")
+
+        try:
+            pruned = prune_all_registries()
+            if any(count > 0 for count in pruned.values()):
+                logger.info(f"[Registry] Pruned expired job entries: {pruned}")
+        except Exception as e:
+            logger.warning(f"[Registry] Prune pass failed: {e}")
 
         interval_seconds = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", "1800"))
         await asyncio.sleep(interval_seconds)

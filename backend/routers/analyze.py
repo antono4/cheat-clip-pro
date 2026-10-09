@@ -32,7 +32,8 @@ from backend.services.ai_service import (
     get_flash_models_for_key,
     list_available_gemini_models,
 )
-from backend.routers.media import _find_video_file_on_disk, _is_safe_path
+from backend.routers.media import _find_video_file_on_disk
+from backend.utils.media_paths import is_safe_path as _is_safe_path
 from backend.services.gdrive_service import (
     download_google_drive_video,
     is_google_drive_url,
