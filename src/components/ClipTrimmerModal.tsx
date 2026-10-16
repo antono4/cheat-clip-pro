@@ -597,13 +597,13 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
           flexDirection: 'column',
           overflow: 'hidden',
           borderRadius: '16px',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08)'
+          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(var(--tint), 0.08)'
         }}
       >
         {/* Header */}
-        <div className="studio-modal-header" style={{ padding: '0.9rem 1.4rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+        <div className="studio-modal-header" style={{ padding: '0.9rem 1.4rem', borderBottom: '1px solid rgba(var(--tint), 0.06)' }}>
           <div className="studio-header-title">
-            <div className="studio-icon-badge" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}>
+            <div className="studio-icon-badge" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: 'var(--ink-contrast)' }}>
               ✂️
             </div>
             <div>
@@ -632,7 +632,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.1rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
 
           {/* Title Editor Row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.03)', padding: '0.55rem 0.9rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(var(--tint), 0.03)', padding: '0.55rem 0.9rem', borderRadius: '10px', border: '1px solid rgba(var(--tint), 0.06)' }}>
             <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
               {t.trimmer.clipTitleLabel}
             </span>
@@ -660,7 +660,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   backgroundPosition: 'center',
                   borderRadius: '12px',
                   overflow: 'hidden',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(var(--tint), 0.08)',
                   position: 'relative',
                   aspectRatio: '16/9',
                   cursor: isDirectVideo ? 'pointer' : 'default'
@@ -685,9 +685,9 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                       alignItems: 'center',
                       gap: '0.6rem',
                       padding: '0.5rem 0.9rem',
-                      background: 'rgba(10, 15, 28, 0.85)',
+                      background: 'var(--panel-bg-soft)',
                       borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      border: '1px solid rgba(var(--tint), 0.12)',
                       fontSize: '0.78rem',
                       color: 'var(--text-secondary)'
                     }}>
@@ -758,8 +758,8 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
               <div
                 className="trimmer-video-controls-bar"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.07)',
+                  background: 'rgba(var(--tint), 0.03)',
+                  border: '1px solid rgba(var(--tint), 0.07)',
                   borderRadius: '10px',
                   padding: '0.45rem 0.65rem',
                   display: 'flex',
@@ -797,8 +797,8 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                       type="button"
                       onClick={toggleMute}
                       style={{
-                        background: isMuted ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.06)',
-                        border: `1px solid ${isMuted ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.12)'}`,
+                        background: isMuted ? 'rgba(239, 68, 68, 0.15)' : 'rgba(var(--tint), 0.06)',
+                        border: `1px solid ${isMuted ? 'rgba(239, 68, 68, 0.4)' : 'rgba(var(--tint), 0.12)'}`,
                         color: isMuted ? '#fca5a5' : '#fff',
                         borderRadius: '6px',
                         padding: '0.3rem 0.5rem',
@@ -841,7 +841,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   <button
                     type="button"
                     onClick={() => seekToTime(adjustedStart, true)}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-secondary)', borderRadius: '5px', padding: '0.22rem 0.45rem', cursor: 'pointer', fontSize: '0.68rem' }}
+                    style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.12)', color: 'var(--text-secondary)', borderRadius: '5px', padding: '0.22rem 0.45rem', cursor: 'pointer', fontSize: '0.68rem' }}
                     title={t.trimmer.jumpToStart}
                   >
                     ⏮ Start
@@ -865,7 +865,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   <button
                     type="button"
                     onClick={() => seekToTime(adjustedEnd, true)}
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-secondary)', borderRadius: '5px', padding: '0.22rem 0.45rem', cursor: 'pointer', fontSize: '0.68rem' }}
+                    style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.12)', color: 'var(--text-secondary)', borderRadius: '5px', padding: '0.22rem 0.45rem', cursor: 'pointer', fontSize: '0.68rem' }}
                     title={t.trimmer.jumpToEnd}
                   >
                     End ⏭
@@ -873,11 +873,11 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                 </div>
 
                 {/* Real-time Time / Length badge */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(0,0,0,0.35)', padding: '0.2rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--well-4)', padding: '0.2rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(var(--tint), 0.06)' }}>
                   <span style={{ color: '#38bdf8', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.78rem' }}>
                     {formatSeconds(currentTime)}
                   </span>
-                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.68rem' }}>/</span>
+                  <span style={{ color: 'rgba(var(--tint), 0.25)', fontSize: '0.68rem' }}>/</span>
                   <span style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.72rem' }}>
                     {formatSeconds(adjustedEnd - adjustedStart)}
                   </span>
@@ -889,8 +889,8 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
               {/* Metrics Card */}
               <div style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                background: 'rgba(var(--tint), 0.03)',
+                border: '1px solid rgba(var(--tint), 0.06)',
                 borderRadius: '12px',
                 padding: '0.8rem 1rem',
                 display: 'grid',
@@ -904,7 +904,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#38bdf8', marginTop: '0.15rem' }}>
                     {formatSeconds(adjustedDuration)}
                   </div>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(var(--tint), 0.4)' }}>
                     {formatSeconds(adjustedStart)} → {formatSeconds(adjustedEnd)}
                   </span>
                 </div>
@@ -915,20 +915,20 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#facc15', marginTop: '0.15rem' }}>
                     {formatSeconds(origDuration)}
                   </div>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(var(--tint), 0.4)' }}>
                     {formatSeconds(origStart)} → {formatSeconds(origEnd)}
                   </span>
                 </div>
 
                 {/* Added context summary pills */}
-                <div style={{ gridColumn: 'span 2', display: 'flex', gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.5rem' }}>
-                  <div style={{ flex: 1, background: frontAdded > 0 ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255,255,255,0.02)', padding: '0.35rem 0.6rem', borderRadius: '6px', border: `1px solid ${frontAdded > 0 ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255,255,255,0.05)'}` }}>
+                <div style={{ gridColumn: 'span 2', display: 'flex', gap: '0.5rem', borderTop: '1px solid rgba(var(--tint), 0.05)', paddingTop: '0.5rem' }}>
+                  <div style={{ flex: 1, background: frontAdded > 0 ? 'rgba(56, 189, 248, 0.12)' : 'rgba(var(--tint), 0.02)', padding: '0.35rem 0.6rem', borderRadius: '6px', border: `1px solid ${frontAdded > 0 ? 'rgba(56, 189, 248, 0.3)' : 'rgba(var(--tint), 0.05)'}` }}>
                     <div style={{ fontSize: '0.64rem', color: 'var(--text-secondary)' }}>{t.trimmer.addedIntro}</div>
                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: frontAdded > 0 ? '#38bdf8' : 'var(--text-secondary)' }}>
                       {frontAdded > 0 ? `+${frontAdded}s (${formatSeconds(frontAdded)})` : '0s'}
                     </div>
                   </div>
-                  <div style={{ flex: 1, background: endAdded > 0 ? 'rgba(168, 85, 247, 0.12)' : 'rgba(255,255,255,0.02)', padding: '0.35rem 0.6rem', borderRadius: '6px', border: `1px solid ${endAdded > 0 ? 'rgba(168, 85, 247, 0.3)' : 'rgba(255,255,255,0.05)'}` }}>
+                  <div style={{ flex: 1, background: endAdded > 0 ? 'rgba(168, 85, 247, 0.12)' : 'rgba(var(--tint), 0.02)', padding: '0.35rem 0.6rem', borderRadius: '6px', border: `1px solid ${endAdded > 0 ? 'rgba(168, 85, 247, 0.3)' : 'rgba(var(--tint), 0.05)'}` }}>
                     <div style={{ fontSize: '0.64rem', color: 'var(--text-secondary)' }}>{t.trimmer.addedOutro}</div>
                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: endAdded > 0 ? '#c084fc' : 'var(--text-secondary)' }}>
                       {endAdded > 0 ? `+${endAdded}s (${formatSeconds(endAdded)})` : '0s'}
@@ -938,7 +938,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
               </div>
 
               {/* Quick Presets Bar */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '0.55rem 0.75rem' }}>
+              <div style={{ background: 'rgba(var(--tint), 0.02)', border: '1px solid rgba(var(--tint), 0.05)', borderRadius: '10px', padding: '0.55rem 0.75rem' }}>
                 <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '0.35rem' }}>
                   {t.trimmer.quickPresets} (Max ±2m)
                 </span>
@@ -952,8 +952,8 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                       seekToTime(origStart, false);
                     }}
                     style={{
-                      background: (adjustedStart === origStart && adjustedEnd === origEnd) ? 'rgba(234, 179, 8, 0.25)' : 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${(adjustedStart === origStart && adjustedEnd === origEnd) ? 'rgba(234, 179, 8, 0.6)' : 'rgba(255,255,255,0.1)'}`,
+                      background: (adjustedStart === origStart && adjustedEnd === origEnd) ? 'rgba(234, 179, 8, 0.25)' : 'rgba(var(--tint), 0.05)',
+                      border: `1px solid ${(adjustedStart === origStart && adjustedEnd === origEnd) ? 'rgba(234, 179, 8, 0.6)' : 'rgba(var(--tint), 0.1)'}`,
                       color: (adjustedStart === origStart && adjustedEnd === origEnd) ? '#facc15' : 'var(--text-secondary)',
                       borderRadius: '6px',
                       padding: '0.2rem 0.5rem',
@@ -972,7 +972,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                       setAdjustedEnd(Math.min(maxTimelineEnd, origEnd + 15));
                       seekToTime(Math.max(minTimelineStart, origStart - 15), false);
                     }}
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
+                    style={{ background: 'rgba(var(--tint), 0.05)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-secondary)', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
                   >
                     {t.trimmer.presetPlus15s}
                   </button>
@@ -984,7 +984,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                       setAdjustedEnd(Math.min(maxTimelineEnd, origEnd + 30));
                       seekToTime(Math.max(minTimelineStart, origStart - 30), false);
                     }}
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
+                    style={{ background: 'rgba(var(--tint), 0.05)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-secondary)', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
                   >
                     {t.trimmer.presetPlus30s}
                   </button>
@@ -996,7 +996,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                       setAdjustedEnd(Math.min(maxTimelineEnd, origEnd + 60));
                       seekToTime(Math.max(minTimelineStart, origStart - 60), false);
                     }}
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
+                    style={{ background: 'rgba(var(--tint), 0.05)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-secondary)', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
                   >
                     {t.trimmer.presetPlus1m}
                   </button>
@@ -1018,7 +1018,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
           </div>
 
           {/* Interactive Video Editor Timeline Container */}
-          <div style={{ background: 'rgba(12, 14, 24, 0.85)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', padding: '0.9rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+          <div style={{ background: 'var(--panel-bg-soft)', borderRadius: '14px', border: '1px solid rgba(var(--tint), 0.08)', padding: '0.9rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
 
             {/* Timeline Ruler & Zone Legends */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
@@ -1036,7 +1036,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   {t.trimmer.outroContextZone}
                 </span>
               </div>
-              <span style={{ fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>
+              <span style={{ fontFamily: 'monospace', color: 'rgba(var(--tint), 0.4)' }}>
                 {formatSeconds(minTimelineStart)} — {formatSeconds(maxTimelineEnd)}
               </span>
             </div>
@@ -1052,9 +1052,9 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
               style={{
                 position: 'relative',
                 height: '56px',
-                background: 'rgba(20, 24, 40, 0.9)',
+                background: 'var(--well-5)',
                 borderRadius: '10px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(var(--tint), 0.1)',
                 cursor: isDownloading ? 'not-allowed' : 'pointer',
                 userSelect: 'none',
                 touchAction: 'none',
@@ -1100,7 +1100,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   fontSize: '0.66rem',
                   fontWeight: 700,
                   color: '#facc15',
-                  background: 'rgba(15, 23, 42, 0.85)',
+                  background: 'var(--well-6)',
                   padding: '0.15rem 0.45rem',
                   borderRadius: '4px',
                   border: '1px solid rgba(234, 179, 8, 0.4)',
@@ -1176,7 +1176,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   left: '50%',
                   transform: 'translateX(-50%)',
                   background: '#0284c7',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                   fontSize: '0.65rem',
                   fontWeight: 700,
                   padding: '0.1rem 0.35rem',
@@ -1218,7 +1218,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   left: '50%',
                   transform: 'translateX(-50%)',
                   background: '#9333ea',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                   fontSize: '0.65rem',
                   fontWeight: 700,
                   padding: '0.1rem 0.35rem',
@@ -1289,22 +1289,22 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                 </div>
                 {/* Stepper Buttons */}
                 <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(-30)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(-30)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     -30s
                   </button>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(-15)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(-15)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     -15s
                   </button>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(-5)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(-5)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     -5s
                   </button>
                   <button type="button" disabled={isDownloading} onClick={() => { setAdjustedStart(origStart); seekToTime(origStart, false); }} style={{ background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.4)', color: '#facc15', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
                     {t.trimmer.resetToAiStart}
                   </button>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(+5)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(+5)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     +5s
                   </button>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(+15)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeStart(+15)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     +15s
                   </button>
                 </div>
@@ -1344,22 +1344,22 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                 </div>
                 {/* Stepper Buttons */}
                 <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(-15)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(-15)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     -15s
                   </button>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(-5)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(-5)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     -5s
                   </button>
                   <button type="button" disabled={isDownloading} onClick={() => { setAdjustedEnd(origEnd); seekToTime(origEnd, false); }} style={{ background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.4)', color: '#facc15', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
                     {t.trimmer.resetToAiEnd}
                   </button>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(+5)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(+5)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     +5s
                   </button>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(+15)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(+15)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     +15s
                   </button>
-                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(+30)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
+                  <button type="button" disabled={isDownloading} onClick={() => nudgeEnd(+30)} style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.1)', color: 'var(--text-primary)', borderRadius: '5px', padding: '0.2rem 0.45rem', fontSize: '0.7rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}>
                     +30s
                   </button>
                 </div>
@@ -1392,11 +1392,11 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
 
           {/* Transcript Navigator Collapsible Section */}
           {relevantTranscript.length > 0 && (
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '0.75rem 0.95rem' }}>
+            <div style={{ background: 'rgba(var(--tint), 0.02)', border: '1px solid rgba(var(--tint), 0.06)', borderRadius: '12px', padding: '0.75rem 0.95rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showTranscript ? '0.5rem' : '0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span style={{ fontSize: '0.82rem' }}>📜</span>
-                  <strong style={{ fontSize: '0.8rem', color: '#fff' }}>{t.trimmer.transcriptTitle}</strong>
+                  <strong style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{t.trimmer.transcriptTitle}</strong>
                   <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
                     ({relevantTranscript.length} lines in ±2m context)
                   </span>
@@ -1433,17 +1433,17 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                               ? 'rgba(234, 179, 8, 0.12)'
                               : inAdjusted
                               ? 'rgba(56, 189, 248, 0.08)'
-                              : 'rgba(255, 255, 255, 0.02)',
+                              : 'rgba(var(--tint), 0.02)',
                             border: `1px solid ${inAiPick ? 'rgba(234, 179, 8, 0.3)' : inAdjusted ? 'rgba(56, 189, 248, 0.2)' : 'transparent'}`,
                             fontSize: '0.74rem',
                             gap: '0.55rem'
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flex: 1, minWidth: 0 }}>
-                            <span style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: inAiPick ? '#facc15' : inAdjusted ? '#38bdf8' : 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: inAiPick ? '#facc15' : inAdjusted ? '#38bdf8' : 'rgba(var(--tint), 0.4)', whiteSpace: 'nowrap' }}>
                               {formatSeconds(line.start)}
                             </span>
-                            <span style={{ color: inAdjusted ? '#fff' : 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ color: inAdjusted ? '#fff' : 'rgba(var(--tint), 0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {line.text}
                             </span>
                           </div>
@@ -1466,7 +1466,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                                 setAdjustedStart(Math.floor(line.start));
                                 seekToTime(line.start, false);
                               }}
-                              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-secondary)', borderRadius: '4px', padding: '0.12rem 0.32rem', fontSize: '0.62rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
+                              style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.12)', color: 'var(--text-secondary)', borderRadius: '4px', padding: '0.12rem 0.32rem', fontSize: '0.62rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
                               title={`${t.trimmer.setAsStart} (${formatSeconds(line.start)})`}
                             >
                               {t.trimmer.setAsStart}
@@ -1479,7 +1479,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                                 setAdjustedEnd(Math.ceil(line.end));
                                 seekToTime(line.end, false);
                               }}
-                              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-secondary)', borderRadius: '4px', padding: '0.12rem 0.32rem', fontSize: '0.62rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
+                              style={{ background: 'rgba(var(--tint), 0.06)', border: '1px solid rgba(var(--tint), 0.12)', color: 'var(--text-secondary)', borderRadius: '4px', padding: '0.12rem 0.32rem', fontSize: '0.62rem', cursor: isDownloading ? 'not-allowed' : 'pointer' }}
                               title={`${t.trimmer.setAsEnd} (${formatSeconds(line.end)})`}
                             >
                               {t.trimmer.setAsEnd}
@@ -1499,8 +1499,8 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
         {/* Footer Action Bar */}
         <div style={{
           padding: '0.85rem 1.4rem',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-          background: 'rgba(12, 14, 24, 0.95)',
+          borderTop: '1px solid rgba(var(--tint), 0.06)',
+          background: 'var(--panel-bg)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -1518,7 +1518,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
             }}
             style={{
               background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.12)',
+              border: '1px solid rgba(var(--tint), 0.12)',
               color: 'var(--text-secondary)',
               borderRadius: '8px',
               padding: '0.45rem 0.85rem',
@@ -1539,8 +1539,8 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
               type="button"
               onClick={onClose}
               style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
+                background: 'rgba(var(--tint), 0.06)',
+                border: '1px solid rgba(var(--tint), 0.14)',
                 color: 'var(--text-secondary)',
                 borderRadius: '8px',
                 padding: '0.48rem 0.95rem',
@@ -1574,7 +1574,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   : downloadSuccess
                   ? 'linear-gradient(135deg, #10b981, #059669)'
                   : 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                color: '#fff',
+                color: 'var(--text-primary)',
                 border: 'none',
                 transition: 'var(--transition-smooth)'
               }}

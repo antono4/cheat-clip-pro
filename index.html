@@ -10,6 +10,21 @@
     content="Cheat Clip Pro - AI Powered Auto Clipper. Automatically find high-engagement segments on YouTube, Google Drive, or uploaded videos using audience heatmaps and Gemini AI analysis." />
   <title>Cheat Clip Pro | Auto Clipper</title>
 
+  <!-- Apply the saved theme before first paint to avoid a flash of the wrong theme -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('cheat_clip_theme');
+        var theme = saved === 'light' || saved === 'dark'
+          ? saved
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

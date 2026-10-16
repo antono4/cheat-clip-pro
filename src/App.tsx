@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { HeatmapTimeline } from './components/HeatmapTimeline';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { CookiesModal } from './components/CookiesModal';
 import { AppUpdateModal } from './components/AppUpdateModal';
 import { resilientFetch } from './utils/api';
@@ -2089,7 +2090,7 @@ Transcript:
           </span>
         </button>
 
-        <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.07)', margin: '0.15rem 0' }} />
+        <div style={{ height: '1px', background: 'rgba(var(--tint), 0.07)', margin: '0.15rem 0' }} />
 
         <button
           type="button"
@@ -2316,8 +2317,8 @@ Transcript:
               fontSize: '0.8rem',
               fontWeight: 600,
               borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(var(--tint), 0.05)',
+              border: '1px solid rgba(var(--tint), 0.1)',
               color: 'var(--text-secondary)',
               display: 'flex',
               alignItems: 'center',
@@ -2338,8 +2339,8 @@ Transcript:
               fontSize: '0.8rem',
               fontWeight: 600,
               borderRadius: '8px',
-              background: hasCookies ? 'rgba(34, 197, 94, 0.12)' : 'rgba(255, 255, 255, 0.05)',
-              border: hasCookies ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid rgba(255, 255, 255, 0.1)',
+              background: hasCookies ? 'rgba(34, 197, 94, 0.12)' : 'rgba(var(--tint), 0.05)',
+              border: hasCookies ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid rgba(var(--tint), 0.1)',
               color: hasCookies ? '#4ade80' : 'var(--text-secondary)',
               display: 'flex',
               alignItems: 'center',
@@ -2365,8 +2366,8 @@ Transcript:
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'rgba(var(--tint), 0.05)',
+                border: '1px solid rgba(var(--tint), 0.1)',
                 color: 'var(--text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
@@ -2389,8 +2390,8 @@ Transcript:
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'rgba(var(--tint), 0.05)',
+                border: '1px solid rgba(var(--tint), 0.1)',
                 color: 'var(--text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
@@ -2403,6 +2404,7 @@ Transcript:
               <span>🔄 {t.header.updateBtn}</span>
             </button>
           )}
+          <ThemeSwitcher />
           <LanguageSwitcher />
           <a
             href="https://tako.id/johansa"
@@ -2443,8 +2445,8 @@ Transcript:
                 gap: '0.5rem',
                 padding: '0.55rem 1.1rem',
                 borderRadius: '10px',
-                border: sourceMode === 'youtube' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(255,255,255,0.08)',
-                background: sourceMode === 'youtube' ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.08) 100%)' : 'rgba(255,255,255,0.03)',
+                border: sourceMode === 'youtube' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(var(--tint), 0.08)',
+                background: sourceMode === 'youtube' ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.08) 100%)' : 'rgba(var(--tint), 0.03)',
                 color: sourceMode === 'youtube' ? '#fff' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontWeight: 600,
@@ -2474,8 +2476,8 @@ Transcript:
                 gap: '0.5rem',
                 padding: '0.55rem 1.1rem',
                 borderRadius: '10px',
-                border: sourceMode === 'gdrive' ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(255,255,255,0.08)',
-                background: sourceMode === 'gdrive' ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.08) 100%)' : 'rgba(255,255,255,0.03)',
+                border: sourceMode === 'gdrive' ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(var(--tint), 0.08)',
+                background: sourceMode === 'gdrive' ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.08) 100%)' : 'rgba(var(--tint), 0.03)',
                 color: sourceMode === 'gdrive' ? '#fff' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontWeight: 600,
@@ -2510,8 +2512,8 @@ Transcript:
                 gap: '0.5rem',
                 padding: '0.55rem 1.1rem',
                 borderRadius: '10px',
-                border: sourceMode === 'upload' ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(255,255,255,0.08)',
-                background: sourceMode === 'upload' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.08) 100%)' : 'rgba(255,255,255,0.03)',
+                border: sourceMode === 'upload' ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(var(--tint), 0.08)',
+                background: sourceMode === 'upload' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.08) 100%)' : 'rgba(var(--tint), 0.03)',
                 color: sourceMode === 'upload' ? '#fff' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontWeight: 600,
@@ -2662,8 +2664,8 @@ Transcript:
                     gap: '0.85rem',
                     padding: '2.5rem 1.5rem',
                     borderRadius: '14px',
-                    border: isDragOverVideo ? '2px dashed #3b82f6' : '2px dashed rgba(255, 255, 255, 0.15)',
-                    background: isDragOverVideo ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                    border: isDragOverVideo ? '2px dashed #3b82f6' : '2px dashed rgba(var(--tint), 0.15)',
+                    background: isDragOverVideo ? 'rgba(59, 130, 246, 0.12)' : 'rgba(var(--tint), 0.02)',
                     cursor: 'pointer',
                     transition: 'all 0.25s ease'
                   }}
@@ -2773,8 +2775,8 @@ Transcript:
                       style={{
                         padding: '0.5rem 1rem',
                         borderRadius: '8px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: 'rgba(var(--tint), 0.05)',
+                        border: '1px solid rgba(var(--tint), 0.1)',
                         color: 'var(--text-secondary)',
                         fontSize: '0.8rem',
                         fontWeight: 600,
@@ -2821,7 +2823,7 @@ Transcript:
 
           <div className="form-settings-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
             {/* Card 1: AI Engine Configuration */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem', borderRadius: '12px', background: 'rgba(var(--tint), 0.02)', border: '1px solid rgba(var(--tint), 0.04)' }}>
               <h3 style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
                 🤖 {t.form.aiSettingsTitle}
               </h3>
@@ -2843,7 +2845,7 @@ Transcript:
                     >
                       🔑 {t.form.getFreeKey}
                     </a>
-                    <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.75rem' }}>|</span>
+                    <span style={{ color: 'rgba(var(--tint), 0.15)', fontSize: '0.75rem' }}>|</span>
                     <span
                       onClick={() => setShowApiKey(!showApiKey)}
                       style={{ cursor: 'pointer', color: 'var(--primary)', fontSize: '0.75rem' }}
@@ -2893,11 +2895,11 @@ Transcript:
                     localStorage.setItem('cheat_clip_selected_model', e.target.value);
                   }}
                   disabled={loading}
-                  style={{ padding: '0.6rem 1rem', fontSize: '0.875rem', height: '42px', cursor: 'pointer', appearance: 'auto', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '8px' }}
+                  style={{ padding: '0.6rem 1rem', fontSize: '0.875rem', height: '42px', cursor: 'pointer', appearance: 'auto', background: 'rgba(var(--tint), 0.03)', border: '1px solid var(--border-color)', borderRadius: '8px' }}
                 >
                   {availableModels.length > 0 ? (
                     availableModels.map((m) => (
-                      <option key={m} value={m} style={{ background: '#0d1324', color: '#fff' }}>
+                      <option key={m} value={m} style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>
                         {m}
                       </option>
                     ))
@@ -2905,21 +2907,21 @@ Transcript:
                     <>
                       {detectedProvider === 'kimi' ? (
                         <>
-                          <option value="kimi-k3" style={{ background: '#0d1324', color: '#fff' }}>kimi-k3 (Flagship - 1M context, strongest reasoning)</option>
-                          <option value="kimi-k3-256k" style={{ background: '#0d1324', color: '#fff' }}>kimi-k3-256k (K3 with 256K context)</option>
-                          <option value="kimi-k2.7" style={{ background: '#0d1324', color: '#fff' }}>kimi-k2.7 (Fast & capable)</option>
-                          <option value="kimi-k2.7-code" style={{ background: '#0d1324', color: '#fff' }}>kimi-k2.7-code (Coding-tuned)</option>
-                          <option value="kimi-k2.6" style={{ background: '#0d1324', color: '#fff' }}>kimi-k2.6 (General-purpose, vision + text)</option>
-                          <option value="kimi-k2.5" style={{ background: '#0d1324', color: '#fff' }}>kimi-k2.5 (Earlier generation)</option>
+                          <option value="kimi-k3" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>kimi-k3 (Flagship - 1M context, strongest reasoning)</option>
+                          <option value="kimi-k3-256k" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>kimi-k3-256k (K3 with 256K context)</option>
+                          <option value="kimi-k2.7" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>kimi-k2.7 (Fast & capable)</option>
+                          <option value="kimi-k2.7-code" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>kimi-k2.7-code (Coding-tuned)</option>
+                          <option value="kimi-k2.6" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>kimi-k2.6 (General-purpose, vision + text)</option>
+                          <option value="kimi-k2.5" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>kimi-k2.5 (Earlier generation)</option>
                         </>
                       ) : (
                         <>
-                          <option value="gemini-2.5-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-flash (Fast & recommended - Free tier friendly)</option>
-                          <option value="gemini-2.5-flash-lite" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-flash-lite (Ultra-fast & lightweight)</option>
-                          <option value="gemini-2.0-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.0-flash (Fast & responsive)</option>
-                          <option value="gemini-2.0-flash-lite" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.0-flash-lite (Lightweight flash)</option>
-                          <option value="gemini-1.5-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-1.5-flash (Fallback flash)</option>
-                          <option value="gemini-2.5-pro" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-pro (Creative & complex - High quota)</option>
+                          <option value="gemini-2.5-flash" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>gemini-2.5-flash (Fast & recommended - Free tier friendly)</option>
+                          <option value="gemini-2.5-flash-lite" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>gemini-2.5-flash-lite (Ultra-fast & lightweight)</option>
+                          <option value="gemini-2.0-flash" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>gemini-2.0-flash (Fast & responsive)</option>
+                          <option value="gemini-2.0-flash-lite" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>gemini-2.0-flash-lite (Lightweight flash)</option>
+                          <option value="gemini-1.5-flash" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>gemini-1.5-flash (Fallback flash)</option>
+                          <option value="gemini-2.5-pro" style={{ background: 'var(--option-bg)', color: 'var(--text-primary)' }}>gemini-2.5-pro (Creative & complex - High quota)</option>
                         </>
                       )}
                     </>
@@ -2932,7 +2934,7 @@ Transcript:
             </div>
 
             {/* Card 2: Clip Parameters & Focus */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem', borderRadius: '12px', background: 'rgba(var(--tint), 0.02)', border: '1px solid rgba(var(--tint), 0.04)' }}>
               <h3 style={{ fontSize: '0.9rem', color: 'var(--secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
                 ⚡ {t.form.clipCustomizationTitle}
               </h3>
@@ -3073,7 +3075,7 @@ Transcript:
                           flex: 1,
                           height: '6px',
                           borderRadius: '3px',
-                          background: 'rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(var(--tint), 0.1)',
                           outline: 'none',
                           cursor: 'pointer',
                           accentColor: 'var(--secondary)'
@@ -3152,7 +3154,7 @@ Transcript:
                       gap: '0.5rem',
                       padding: '0.5rem 1rem',
                       cursor: 'pointer',
-                      background: 'rgba(255, 255, 255, 0.05)',
+                      background: 'rgba(var(--tint), 0.05)',
                       border: '1px solid var(--border-color)',
                       borderRadius: '8px',
                       fontSize: '0.85rem',
@@ -3334,7 +3336,7 @@ Transcript:
                     }}
                     style={{
                       fontSize: '0.74rem',
-                      color: '#fff',
+                      color: 'var(--text-primary)',
                       background: '#ef4444',
                       border: 'none',
                       borderRadius: '6px',
@@ -3355,8 +3357,8 @@ Transcript:
                     style={{
                       fontSize: '0.74rem',
                       color: 'var(--text-secondary)',
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      background: 'rgba(var(--tint), 0.08)',
+                      border: '1px solid rgba(var(--tint), 0.15)',
                       borderRadius: '6px',
                       padding: '0.25rem 0.45rem',
                       cursor: 'pointer',
@@ -3394,7 +3396,7 @@ Transcript:
                 type="button"
                 onClick={() => setShowHistory(h => !h)}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
+                  background: 'rgba(var(--tint), 0.05)',
                   border: '1px solid var(--border-color)',
                   color: 'var(--text-secondary)',
                   borderRadius: '8px',
@@ -3430,9 +3432,9 @@ Transcript:
                 <div style={{
                   padding: '2rem 1rem',
                   textAlign: 'center',
-                  background: 'rgba(255, 255, 255, 0.02)',
+                  background: 'rgba(var(--tint), 0.02)',
                   borderRadius: '12px',
-                  border: '1px dashed rgba(255, 255, 255, 0.1)'
+                  border: '1px dashed rgba(var(--tint), 0.1)'
                 }}>
                   <span style={{ fontSize: '1.75rem', display: 'block', marginBottom: '0.5rem' }}>🔍</span>
                   <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
@@ -3485,7 +3487,7 @@ Transcript:
                             bottom: '3px',
                             right: '3px',
                             background: 'rgba(0, 0, 0, 0.75)',
-                            color: '#fff',
+                            color: 'var(--text-primary)',
                             fontSize: '0.65rem',
                             fontWeight: 700,
                             padding: '0.1rem 0.3rem',
@@ -3621,10 +3623,10 @@ Transcript:
                     marginTop: '0.5rem',
                     lineHeight: '1.6',
                     whiteSpace: 'pre-wrap',
-                    background: 'rgba(0, 0, 0, 0.25)',
+                    background: 'var(--well-2)',
                     padding: '0.75rem 1rem',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(var(--tint), 0.08)',
                     fontFamily: 'monospace',
                     maxHeight: '260px',
                     overflowY: 'auto'
@@ -3658,8 +3660,8 @@ Transcript:
                         if (fileInput) fileInput.click();
                       }}
                       style={{
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        background: 'rgba(var(--tint), 0.05)',
+                        border: '1px solid rgba(var(--tint), 0.15)',
                         color: 'var(--text-primary)',
                         borderRadius: '8px',
                         padding: '0.45rem 0.85rem',
@@ -3674,7 +3676,7 @@ Transcript:
                       📄 {t.form.uploadCustomSubtitles}
                     </button>
                   </div>
-                  <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', borderLeft: '3px solid #f59e0b', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'rgba(var(--tint), 0.03)', borderRadius: '8px', borderLeft: '3px solid #f59e0b', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                     💡 <strong>Tip:</strong> {t.errors.noSubtitlesTip}
                   </div>
                 </>
@@ -3759,7 +3761,7 @@ Transcript:
             </div>
 
             {/* Master Progress Bar */}
-            <div style={{ marginBottom: '2rem', padding: '0.85rem 1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <div style={{ marginBottom: '2rem', padding: '0.85rem 1rem', background: 'rgba(var(--tint), 0.02)', borderRadius: '10px', border: '1px solid rgba(var(--tint), 0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
                 <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {t.loading.pipelineCompletion}
@@ -3768,7 +3770,7 @@ Transcript:
                   {overallProgress}%
                 </span>
               </div>
-              <div style={{ height: '7px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '7px', background: 'rgba(var(--tint), 0.05)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div
                   style={{
                     height: '100%',
@@ -4002,8 +4004,8 @@ Transcript:
                     padding: '0.5rem 1rem',
                     borderRadius: '8px',
                     cursor: 'pointer',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: 'rgba(var(--tint), 0.03)',
+                    border: '1px solid rgba(var(--tint), 0.08)',
                     color: 'var(--text-primary)'
                   }}
                 >
@@ -4028,7 +4030,7 @@ Transcript:
                     cursor: isDownloadingRaw ? 'not-allowed' : 'pointer',
                     background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.45) 100%)',
                     border: '1px solid rgba(59, 130, 246, 0.5)',
-                    color: '#ffffff',
+                    color: 'var(--text-primary)',
                     fontWeight: 600
                   }}
                 >
@@ -4146,7 +4148,7 @@ Transcript:
                         alignItems: 'center',
                         gap: '0.25rem',
                         borderRadius: '6px',
-                        background: copyTimestampMenuTarget === 'overview' ? 'rgba(255, 94, 58, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                        background: copyTimestampMenuTarget === 'overview' ? 'rgba(255, 94, 58, 0.15)' : 'rgba(var(--tint), 0.05)',
                         border: `1px solid ${copyTimestampMenuTarget === 'overview' ? 'rgba(255, 94, 58, 0.5)' : 'var(--border-color)'}`,
                         color: copyTimestampMenuTarget === 'overview' ? 'var(--secondary)' : 'var(--text-secondary)',
                         cursor: 'pointer',
@@ -4160,7 +4162,7 @@ Transcript:
                       }}
                       onMouseLeave={(e) => {
                         if (copyTimestampMenuTarget !== 'overview') {
-                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                          e.currentTarget.style.background = 'rgba(var(--tint), 0.05)';
                           e.currentTarget.style.borderColor = 'var(--border-color)';
                           e.currentTarget.style.color = 'var(--text-secondary)';
                         }
@@ -4189,7 +4191,7 @@ Transcript:
                           borderRadius: '6px',
                           background: isSelected
                             ? 'rgba(255, 94, 58, 0.1)'
-                            : 'rgba(255, 255, 255, 0.02)',
+                            : 'rgba(var(--tint), 0.02)',
                           border: isSelected
                             ? '1px solid var(--secondary)'
                             : '1px solid transparent',
@@ -4289,7 +4291,7 @@ Transcript:
                 gap: '1rem',
                 padding: '0.6rem 1rem',
                 borderRadius: '10px',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'rgba(var(--tint), 0.02)',
                 border: '1px solid var(--border-color)',
                 fontSize: '0.8rem',
                 color: 'var(--text-secondary)',
@@ -4483,7 +4485,7 @@ Transcript:
                                 handleCopyText(clip.title, 'Title');
                               }}
                               style={{
-                                background: 'rgba(255, 255, 255, 0.05)',
+                                background: 'rgba(var(--tint), 0.05)',
                                 border: '1px solid var(--border-color)',
                                 cursor: 'pointer',
                                 padding: '2px 6px',
@@ -4501,7 +4503,7 @@ Transcript:
                                 e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                e.currentTarget.style.background = 'rgba(var(--tint), 0.05)';
                                 e.currentTarget.style.color = 'var(--text-secondary)';
                                 e.currentTarget.style.borderColor = 'var(--border-color)';
                               }}
@@ -4638,7 +4640,7 @@ Transcript:
                       )}
 
                       {/* Row 1: Primary Actions (Preview Clip on Left, Download Clip on Right) */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '0.75rem', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem', borderTop: '1px solid rgba(var(--tint), 0.03)', paddingTop: '0.75rem', gap: '0.5rem' }}>
                         <button
                           type="button"
                           className="glowing-btn"
@@ -4867,8 +4869,8 @@ Transcript:
               margin: '0 0 1.5rem 0',
               padding: '0.85rem 1rem',
               borderRadius: '10px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(var(--tint), 0.04)',
+              border: '1px solid rgba(var(--tint), 0.08)',
               textAlign: 'left',
               fontSize: '0.78rem'
             }}>

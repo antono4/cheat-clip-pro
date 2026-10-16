@@ -195,8 +195,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#121620',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          backgroundColor: 'var(--modal-bg)',
+          border: '1px solid rgba(var(--tint), 0.12)',
           borderRadius: '16px',
           boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75), 0 0 20px rgba(255, 94, 58, 0.1)',
           overflow: 'hidden',
@@ -207,11 +207,11 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
         <div
           style={{
             padding: '1.25rem 1.5rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            borderBottom: '1px solid rgba(var(--tint), 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%)',
+            background: 'linear-gradient(180deg, rgba(var(--tint), 0.04) 0%, rgba(var(--tint), 0) 100%)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -229,7 +229,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
             <button
               onClick={onClose}
               style={{
-                background: 'rgba(255, 255, 255, 0.06)',
+                background: 'rgba(var(--tint), 0.06)',
                 border: 'none',
                 borderRadius: '8px',
                 width: '32px',
@@ -261,9 +261,9 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '1rem',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'rgba(var(--tint), 0.02)',
                 borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(var(--tint), 0.08)',
               }}
             >
               <div
@@ -289,8 +289,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                   fontSize: '0.8rem',
                   padding: '0.4rem 0.9rem',
                   borderRadius: '20px',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'rgba(var(--tint), 0.05)',
+                  border: '1px solid rgba(var(--tint), 0.1)',
                   color: 'var(--text-secondary)',
                   display: 'flex',
                   alignItems: 'center',
@@ -311,9 +311,9 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '1rem',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'rgba(var(--tint), 0.02)',
                 borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(var(--tint), 0.08)',
               }}
             >
               <div
@@ -340,8 +340,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
               {/* Version Information Card */}
               <div
                 style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(var(--tint), 0.03)',
+                  border: '1px solid rgba(var(--tint), 0.08)',
                   borderRadius: '12px',
                   padding: '1rem',
                   display: 'flex',
@@ -357,8 +357,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                     <span
                       style={{
                         padding: '0.2rem 0.5rem',
-                        background: 'rgba(255, 255, 255, 0.06)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: 'rgba(var(--tint), 0.06)',
+                        border: '1px solid rgba(var(--tint), 0.1)',
                         borderRadius: '6px',
                         fontSize: '0.75rem',
                         fontFamily: 'monospace',
@@ -371,8 +371,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                     <span
                       style={{
                         padding: '0.2rem 0.5rem',
-                        background: 'rgba(255, 255, 255, 0.04)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        background: 'rgba(var(--tint), 0.04)',
+                        border: '1px solid rgba(var(--tint), 0.08)',
                         borderRadius: '6px',
                         fontSize: '0.75rem',
                         color: 'var(--text-secondary)',
@@ -401,8 +401,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                 <div
                   style={{
                     padding: '1rem',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: 'rgba(var(--tint), 0.03)',
+                    border: '1px solid rgba(var(--tint), 0.08)',
                     borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
@@ -413,7 +413,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                     style={{
                       width: '18px',
                       height: '18px',
-                      border: '2px solid rgba(255, 255, 255, 0.2)',
+                      border: '2px solid rgba(var(--tint), 0.2)',
                       borderTopColor: 'var(--primary)',
                       borderRadius: '50%',
                       animation: 'spin 0.8s linear infinite',
@@ -480,7 +480,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                         style={{
                           maxHeight: '120px',
                           overflowY: 'auto',
-                          background: 'rgba(0, 0, 0, 0.25)',
+                          background: 'var(--well-2)',
                           borderRadius: '8px',
                           padding: '0.5rem',
                           display: 'flex',
@@ -511,7 +511,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                       border: 'none',
                       borderRadius: '8px',
-                      color: '#ffffff',
+                      color: 'var(--text-primary)',
                       fontSize: '0.9rem',
                       fontWeight: 700,
                       cursor: 'pointer',
@@ -530,8 +530,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                 /* Up to date Banner */
                 <div
                   style={{
-                    background: 'rgba(255, 255, 255, 0.02)',
-                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    background: 'rgba(var(--tint), 0.02)',
+                    border: '1px solid rgba(var(--tint), 0.06)',
                     borderRadius: '12px',
                     padding: '1rem',
                     display: 'flex',
@@ -554,8 +554,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                     onClick={handleCheckUpdate}
                     disabled={isChecking}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: 'rgba(var(--tint), 0.05)',
+                      border: '1px solid rgba(var(--tint), 0.1)',
                       borderRadius: '8px',
                       padding: '0.4rem 0.75rem',
                       fontSize: '0.78rem',
@@ -595,11 +595,11 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
           <div
             style={{
               padding: '1rem 1.5rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              borderTop: '1px solid rgba(var(--tint), 0.08)',
               display: 'flex',
               justifyContent: info?.allow_update === false ? 'flex-end' : 'space-between',
               alignItems: 'center',
-              background: 'rgba(255, 255, 255, 0.01)',
+              background: 'rgba(var(--tint), 0.01)',
             }}
           >
             {info?.allow_update !== false && (
@@ -607,7 +607,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                 onClick={handleDirectRestart}
                 style={{
                   background: 'transparent',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(var(--tint), 0.1)',
                   borderRadius: '8px',
                   padding: '0.45rem 0.85rem',
                   fontSize: '0.78rem',
@@ -627,7 +627,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
             <button
               onClick={onClose}
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
+                background: 'rgba(var(--tint), 0.08)',
                 border: 'none',
                 borderRadius: '8px',
                 padding: '0.5rem 1.1rem',
