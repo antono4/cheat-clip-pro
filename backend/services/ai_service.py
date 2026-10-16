@@ -352,3 +352,157 @@ def list_available_gemini_models(api_key: str = "") -> List[str]:
     except Exception as e:
         logger.error(f"Error listing models: {e}")
         return default_models
+
+
+# ── Text-to-Video Prompt Generation ─────────────────────────────────────────
+# Turns an analysed video (transcript + metadata) into a reusable text-to-video
+# generation prompt. The prompt is deliberately written to be portable across
+# generators (Veo, Sora, Runway, Kling, ...), so it avoids vendor-specific syntax.
+
+PROMPT_SYSTEM_RULES = (
+    "You are a senior prompt engineer for AI text-to-video models "
+    "(Veo, Sora, Runway, Kling, Pika, Luma). You receive a transcript and metadata from an "
+    "existing video and must describe how to RE-CREATE it from scratch as a generated video.\n"
+    "\n"
+    "Rules:\n"
+    "- Describe only what a camera and a scene can show: subject, wardrobe, action, setting, "
+    "lighting, lens, camera movement, pacing, and audio.\n"
+    "- Never mention that the source was a video, a transcript, a link, or a speaker's name.\n"
+    "- Keep the same language as the transcript for `prompt` and `shot_list`, but write the "
+    "technical fields (style, camera, lighting, audio) in English, which video models parse best.\n"
+    "- Be concrete and visual. Replace abstractions with filmable detail.\n"
+    "- Do not invent brand names, real people, or copyrighted characters."
+)
+
+
+def build_video_prompt_schema() -> Dict[str, Any]:
+    """JSON schema for the structured text-to-video prompt."""
+    return {
+        "type": "object",
+        "properties": {
+            "prompt": {
+                "type": "string",
+                "description": "The complete, ready-to-paste text-to-video prompt (same language as the transcript).",
+            },
+            "summary": {
+                "type": "string",
+                "description": "One or two sentences describing what the generated video shows.",
+            },
+            "style": {"type": "string", "description": "Visual style, e.g. cinematic realism, documentary, anime."},
+            "subject": {"type": "string", "description": "The main subject(s) and their appearance/wardrobe."},
+            "action": {"type": "string", "description": "What happens on screen, in order."},
+            "setting": {"type": "string", "description": "Location, era, time of day, environment detail."},
+            "camera": {"type": "string", "description": "Shot size, lens, angle and camera movement."},
+            "lighting": {"type": "string", "description": "Lighting design, colour palette and mood."},
+            "audio": {"type": "string", "description": "Ambient sound, music and any spoken lines."},
+            "negative_prompt": {"type": "string", "description": "Artifacts or content to avoid."},
+            "shot_list": {
+                "type": "array",
+                "description": "Ordered shot-by-shot breakdown, each with a time range and description.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "time": {"type": "string", "description": "Time range, e.g. '0-5s'."},
+                        "description": {"type": "string", "description": "What the camera shows in this shot."},
+                    },
+                    "required": ["time", "description"],
+                },
+            },
+        },
+        "required": ["prompt", "summary"],
+    }
+
+
+def _build_video_prompt_request(
+    transcript_text: str,
+    title: str = "",
+    channel: str = "",
+    duration: float = 0.0,
+    style_hint: str = "",
+    extra_instructions: str = "",
+) -> str:
+    """Assembles the analysis request sent to the language model."""
+    meta_lines = [f"Source title: {title or 'unknown'}"]
+    if channel:
+        meta_lines.append(f"Source channel/author: {channel}")
+    if duration:
+        meta_lines.append(f"Source duration: {round(duration, 1)} seconds")
+    if style_hint:
+        meta_lines.append(f"Requested visual style: {style_hint}")
+    if extra_instructions:
+        meta_lines.append(f"Additional user instructions: {extra_instructions}")
+
+    return (
+        f"{PROMPT_SYSTEM_RULES}\n\n"
+        "=== SOURCE METADATA ===\n"
+        + "\n".join(meta_lines)
+        + "\n\n=== SOURCE TRANSCRIPT ===\n"
+        + (transcript_text or "(no transcript available — infer a plausible scene from the metadata)")
+        + "\n\n=== TASK ===\n"
+        "Produce a structured text-to-video prompt that recreates the substance of this video. "
+        "Cover the whole narrative, not just the opening, and give the shot list the same number "
+        "of beats as the source so the pacing is preserved. Respond with a single json object only."
+    )
+
+
+def generate_video_prompt(
+    api_key: str,
+    transcript_text: str,
+    model: str = "",
+    title: str = "",
+    channel: str = "",
+    duration: float = 0.0,
+    style_hint: str = "",
+    extra_instructions: str = "",
+) -> SimpleNamespace:
+    """Turns a transcript into a structured text-to-video prompt.
+
+    Routes through whichever provider the key/model selects, mirroring the
+    analyze pipeline, and returns a Gemini-shaped result exposing ``.text`` and
+    ``.parsed`` so callers parse both providers identically.
+    """
+    request_text = _build_video_prompt_request(
+        transcript_text=transcript_text,
+        title=title,
+        channel=channel,
+        duration=duration,
+        style_hint=style_hint,
+        extra_instructions=extra_instructions,
+    )
+    schema = build_video_prompt_schema()
+    provider = detect_provider(model=model, api_key=api_key)
+
+    if provider == PROVIDER_KIMI:
+        kimi_model = (model or "").strip() if is_kimi_model(model) else "kimi-k3"
+        return kimi_chat_completion(
+            api_key=get_kimi_api_key(api_key),
+            model=kimi_model,
+            prompt=request_text,
+            json_schema=schema,
+            timeout=180.0,
+            temperature=0.4,
+        )
+
+    gemini_model = (model or "").strip() or "gemini-2.5-flash"
+    if is_kimi_model(gemini_model):
+        gemini_model = "gemini-2.5-flash"
+
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model=gemini_model,
+        contents=request_text,
+        config={
+            "response_mime_type": "application/json",
+            "response_schema": schema,
+            "temperature": 0.4,
+        },
+    )
+    text = getattr(response, "text", "") or ""
+    parsed = None
+    try:
+        decoded = json.loads(text)
+        if isinstance(decoded, dict):
+            parsed = decoded
+    except Exception:
+        pass
+    return SimpleNamespace(parsed=parsed, text=text, model=gemini_model)
