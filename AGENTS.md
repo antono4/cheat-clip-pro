@@ -29,8 +29,9 @@ python -m uvicorn backend.main:app --port 8000
 # Checks
 python -m pytest tests/ -q     # full suite
 npx tsc -b                     # typecheck
+npm run test                   # frontend unit tests (vitest)
 npm run build                  # production build
-npm run lint                   # eslint (has pre-existing failures, see below)
+npm run lint                   # eslint
 ```
 
 ## Conventions
@@ -49,9 +50,14 @@ npm run lint                   # eslint (has pre-existing failures, see below)
 
 ## Gotchas
 
-- `npm run lint` currently reports ~87 errors in files unrelated to most
-  changes (`ThemeContext.tsx`, `utils/api.ts`, `vite.config.ts`, ...). Check
-  only the files you touched (`npx eslint <files>`) rather than the whole repo.
+- The frontend targets the browser only, so use `window.setInterval` /
+  `window.setTimeout` when storing a timer id in a `useRef<number>`. A bare
+  `setInterval` resolves to the Node overload once `@types/node` is in the
+  dependency tree (vitest pulls it in) and no longer typechecks as `number`.
+- `useEffect` bodies that call a `setState` unconditionally trigger the
+  `react-hooks/set-state-in-effect` rule. Derive the value during render
+  (store the previous input in state and compare) instead of syncing it in an
+  effect.
 - Installing the backend for tests needs no torch or Whisper unless you are
   testing transcription; skipping them keeps the venv small.
 - Serving the Vite dev server behind a proxy host requires

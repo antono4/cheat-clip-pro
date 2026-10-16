@@ -10,6 +10,16 @@ export interface ResilientFetchOptions extends RequestInit {
 }
 
 /**
+ * Best-effort message extraction for values caught from `unknown`.
+ * Non-Error rejections (strings, objects) fall back to the supplied default.
+ */
+export function toErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === 'string' && err) return err;
+  return fallback;
+}
+
+/**
  * Fetch wrapper with automatic retry on 502/503/504 or network connection errors.
  * Ideal for startup probes (/api/cookies, /api/hardware-accel, /api/models).
  */
@@ -24,7 +34,7 @@ export async function resilientFetch(
     ...fetchInit
   } = options;
 
-  let lastError: any = null;
+  let lastError: unknown = null;
   let lastResponse: Response | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -42,12 +52,12 @@ export async function resilientFetch(
           `[resilientFetch] Backend responded with HTTP ${response.status} for ${String(input)} (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${retryDelay * Math.pow(1.5, attempt)}ms...`
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       lastError = err;
       if (!silent) {
         console.warn(
           `[resilientFetch] Network error for ${String(input)} (attempt ${attempt + 1}/${maxRetries + 1}):`,
-          err?.message || err
+          (err as Error)?.message || err
         );
       }
     }

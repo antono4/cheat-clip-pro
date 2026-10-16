@@ -56,6 +56,7 @@ interface BatchStatus {
   total: number;
   completed: number;
   failed: number;
+  skipped?: string[];
   items: BatchItem[];
 }
 
@@ -528,6 +529,11 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                     .replace('{failed}', String(batchStatus.failed))
                     .replace('{total}', String(batchStatus.total))}
                 </div>
+                {batchStatus.skipped && batchStatus.skipped.length > 0 && (
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                    {v.batchSkippedDuplicates.replace('{count}', String(batchStatus.skipped.length))}
+                  </div>
+                )}
                 {batchStatus.items.map((item, i) => (
                   <div key={`${item.url}-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', padding: '0.55rem 0.65rem', borderRadius: '8px', background: 'rgba(var(--tint), 0.03)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.76rem' }}>

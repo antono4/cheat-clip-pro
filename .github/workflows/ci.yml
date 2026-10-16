@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# A new push to the same branch makes the previous run irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+
+      # Deliberately not requirements.txt: that pulls torch, openai-whisper and
+      # YouTube/FFmpeg-sized wheels. The suite only needs the light subset.
+      - name: Install test dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Run tests
+        run: python -m pytest tests/ -q
+
+  backend-lazy-imports:
+    name: Backend imports without torch/whisper
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+
+      - name: Install test dependencies
+        run: pip install -r requirements-test.txt
+
+      # torch and whisper are imported lazily inside the transcription code
+      # path, which is what keeps the app installable without the heavy wheels.
+      # This fails loudly if someone adds a module-level import of either one.
+      - name: Fail if torch or whisper became a top-level import
+        run: |
+          python - <<'PY'
+          import importlib
+          import sys
+
+          for name in ("backend.main", "backend.video_engine"):
+              importlib.import_module(name)
+
+          leaked = [m for m in ("torch", "whisper") if m in sys.modules]
+          if leaked:
+              sys.exit(f"{', '.join(leaked)} imported at module level; keep it lazy")
+          print("backend imports cleanly without torch/whisper")
+          PY
+
+  frontend:
+    name: Frontend (types, tests, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint

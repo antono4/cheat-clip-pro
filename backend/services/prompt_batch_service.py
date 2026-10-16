@@ -10,9 +10,14 @@ rest of the batch. The overall batch is only reported as ``error`` when every
 item failed, mirroring how the render batch summarises itself.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List, Tuple
 
 from backend.utils.registry import TTLCache, register
+
+# Each item costs a transcript fetch plus at least one model call, and they run
+# one at a time, so an unbounded list would hold a worker for hours and burn the
+# caller's quota. 20 keeps a single batch inside a few minutes.
+MAX_BATCH_URLS = 20
 
 PROMPT_BATCHES: TTLCache = register(TTLCache(
     "PROMPT_BATCHES",
@@ -20,7 +25,42 @@ PROMPT_BATCHES: TTLCache = register(TTLCache(
 ))
 
 
-def create_prompt_batch(batch_id: str, urls: List[str]) -> Dict[str, Any]:
+def normalise_batch_urls(raw_urls: Iterable[str]) -> Tuple[List[str], List[str]]:
+    """Cleans a batch of source URLs and enforces the entry rules.
+
+    Returns ``(urls, skipped)`` where ``skipped`` lists duplicate entries that
+    were dropped. Raises ``ValueError`` with a user-facing message when the list
+    is empty, too long, or holds something that is not an http(s) URL — the
+    router turns those into a 400 rather than failing silently mid-batch.
+    """
+    urls: List[str] = []
+    skipped: List[str] = []
+    seen: set = set()
+
+    for candidate in raw_urls or []:
+        url = (candidate or "").strip()
+        if not url:
+            continue
+        if not url.lower().startswith(("http://", "https://")):
+            raise ValueError(f"Not a valid video URL: {url[:80]}")
+        if url in seen:
+            skipped.append(url)
+            continue
+        seen.add(url)
+        urls.append(url)
+
+    if not urls:
+        raise ValueError("At least one video URL is required.")
+    if len(urls) > MAX_BATCH_URLS:
+        raise ValueError(
+            f"Too many videos in one batch: {len(urls)}. The limit is {MAX_BATCH_URLS}."
+        )
+    return urls, skipped
+
+
+def create_prompt_batch(
+    batch_id: str, urls: List[str], skipped: List[str] | None = None
+) -> Dict[str, Any]:
     """Creates a batch record with one pending item per URL."""
     items = [
         {"url": url, "status": "pending", "shot_list": [], "error": None}
@@ -32,6 +72,7 @@ def create_prompt_batch(batch_id: str, urls: List[str]) -> Dict[str, Any]:
         "total": len(items),
         "completed": 0,
         "failed": 0,
+        "skipped": list(skipped or []),
         "items": items,
     }
 

@@ -722,6 +722,7 @@ export const en = {
     extractFailed: "Could not extract a prompt from this video.",
     batchFailed: "Could not start the batch.",
     batchProgress: "{done} of {total} done · {failed} failed",
+    batchSkippedDuplicates: "Ignored {count} duplicate URL(s).",
     promptLabel: "Generated prompt",
     summaryLabel: "Summary",
     cameraLabel: "Camera",

@@ -112,7 +112,9 @@ export async function extractAudioFromVideoClient(
     onProgress?.('Decoding audio track in browser memory (Web Audio API)...');
     const arrayBuf = await videoFile.arrayBuffer();
 
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const audioCtx = new AudioContextClass({ sampleRate: 16000 }); // Downsample to 16kHz for Whisper speed
 
     let audioBuffer: AudioBuffer;
