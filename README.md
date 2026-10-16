@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/diagrams/hero.png" alt="Cheat Clip PRO — AI-powered auto clipper" width="100%">
+</p>
+
 # 🎬 Cheat Clip PRO
 
 > **AI-powered auto clipper — turn long YouTube videos, Google Drive files, and local uploads into ready-to-post TikToks, Shorts, and Reels with animated subtitles, smart face framing, and batch rendering in minutes.**
@@ -5,6 +9,14 @@
 Cheat Clip PRO analyzes audience retention data and the video transcript with an AI model — Google Gemini or Moonshot AI's Kimi — to find the most engaging moments, then renders them into vertical 1080×1920 clips — complete with animated word-level captions, hook titles, and optional music and watermark.
 
 This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https://github.com/galihjuansaputra/cheat-clip-pro) with a hardened backend, in-browser rendering, Docker deployment, and a test suite.
+
+## 🖼️ Gallery
+
+| Paste a link, pick a duration | Watch the AI pipeline run |
+| :---: | :---: |
+| ![Home screen](docs/screenshots/01-home.jpg) | ![Analysis progress](docs/screenshots/03-progress.jpg) |
+| **Ranked viral clips + heatmap** | **Clip Studio — vertical preview** |
+| ![Results with recommended clips](docs/screenshots/05-recommended-clips.jpg) | ![Clip Studio preview](docs/screenshots/09-preview-vertical.jpg) |
 
 ---
 
@@ -24,6 +36,10 @@ This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https
 - **Hardware acceleration** — Auto-detects NVIDIA NVENC, AMD AMF, Intel QuickSync, and falls back to universal `libx264` CPU encoding.
 - **Two languages** — Full English and Indonesian UI.
 - **Privacy-first cookies** — YouTube cookies stay in browser `localStorage`; they are passed to `yt-dlp` only for the duration of a request.
+
+### How it fits together
+
+![Cheat Clip PRO pipeline](docs/diagrams/pipeline.png)
 
 ---
 
@@ -111,6 +127,8 @@ This starts both servers concurrently:
 
 Cheat Clip PRO supports two AI providers. Paste whichever key you have — the app detects the provider from the key prefix.
 
+![AI provider routing and model fallback](docs/diagrams/ai-providers.png)
+
 **Google Gemini** (free tier available):
 
 1. Go to [Google AI Studio](https://aistudio.google.com/) and sign in.
@@ -137,6 +155,36 @@ Cheat Clip PRO supports two AI providers. Paste whichever key you have — the a
 4. **Click Analyze** — The pipeline extracts metadata, samples the retention heatmap, retrieves and aligns the transcript, then asks the selected AI engine to find and score viral clips.
 5. **Customize in Clip Studio** — Frame & crop, face tracking, caption style, hook titles, branding, audio, and hardware acceleration.
 6. **Batch Render** — Render all clips, then download them individually or together as a `.ZIP`.
+
+**1 · Add your source and options**
+
+![Source and settings](docs/screenshots/01-home.jpg)
+
+![Clip customization and AI settings](docs/screenshots/02-settings.jpg)
+
+**2 · Watch the pipeline work**
+
+![Analysis progress](docs/screenshots/03-progress.jpg)
+
+**3 · Review the ranked clips**
+
+![Player, heatmap and summary](docs/screenshots/04-results.jpg)
+
+![Recommended clips panel](docs/screenshots/05-recommended-clips.jpg)
+
+**4 · Style each clip in Clip Studio**
+
+![Clip Studio overview](docs/screenshots/06-clip-studio.jpg)
+
+![Clip Studio controls — framing, captions and layout](docs/screenshots/07-clip-studio-controls.jpg)
+
+| Caption styles | Aspect ratios |
+| :---: | :---: |
+| ![Caption styles](docs/screenshots/11-caption-styles.jpg) | ![Aspect ratio options](docs/screenshots/10-aspect-ratios.jpg) |
+
+**Password-protected videos?** Export your YouTube cookies and paste them in — they stay in your browser.
+
+![Cookies modal](docs/screenshots/08-cookies.jpg)
 
 ### Clip Studio reference
 
@@ -220,6 +268,8 @@ Full interactive docs are available at `/docs` (Swagger UI) and `/redoc`.
 
 Cheat Clip PRO auto-detects the best available encoder and lets you override it in Clip Studio:
 
+![Hardware acceleration ladder](docs/diagrams/hardware-acceleration.png)
+
 1. **NVIDIA NVENC** — `h264_nvenc`
 2. **AMD AMF** — `h264_amf` (Radeon GPUs & Ryzen CPUs)
 3. **Intel QuickSync** — `h264_qsv` (Arc & UHD Graphics)
@@ -256,6 +306,12 @@ Backend tests use `pytest`:
 pip install pytest
 pytest tests/
 ```
+
+---
+
+## 🏗️ Architecture
+
+![Cheat Clip PRO architecture](docs/diagrams/architecture.png)
 
 ---
 
