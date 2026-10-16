@@ -55,6 +55,10 @@ export default function App() {
   });
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('cheat_clip_gemini_api_key') || '');
   const [showApiKey, setShowApiKey] = useState(false);
+
+  // Moonshot/Kimi keys are `sk-`-prefixed, Google keys `AIza`-prefixed. Detecting
+  // from the prefix keeps the key field provider-aware without an extra selector.
+  const detectedProvider: 'gemini' | 'kimi' = apiKey.trim().startsWith('sk-') ? 'kimi' : 'gemini';
   const [isCookiesModalOpen, setIsCookiesModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [allowAppUpdates, setAllowAppUpdates] = useState<boolean>(() => {
@@ -749,7 +753,7 @@ export default function App() {
       }
       setLoadingModels(true);
       try {
-        const res = await resilientFetch(`/api/models?api_key=${encodeURIComponent(cleanKey)}`, {
+        const res = await resilientFetch(`/api/models?api_key=${encodeURIComponent(cleanKey)}&provider=${detectedProvider}`, {
           maxRetries: 3,
           retryDelay: 800,
           silent: true
@@ -758,10 +762,14 @@ export default function App() {
           const data = await res.json();
           if (data.models && data.models.length > 0) {
             setAvailableModels(data.models);
-            if (!data.models.includes(selectedModel) || selectedModel.includes('1.5') || selectedModel.includes('1.0')) {
-              const fallback = data.models.find((m: string) => m.includes('flash')) || data.models[0] || 'gemini-2.5-flash';
-              setSelectedModel(fallback);
-              localStorage.setItem('cheat_clip_selected_model', fallback);
+            const provider: string = data.provider || detectedProvider;
+            const preferred = provider === 'kimi'
+              ? (data.models.find((m: string) => m.includes('k3')) || data.models[0])
+              : (data.models.find((m: string) => m.includes('flash')) || data.models[0] || 'gemini-2.5-flash');
+            const currentIsKimi = selectedModel.includes('kimi');
+            if (!data.models.includes(selectedModel) || (provider === 'kimi') !== currentIsKimi) {
+              setSelectedModel(preferred);
+              localStorage.setItem('cheat_clip_selected_model', preferred);
             }
           }
         }
@@ -777,7 +785,7 @@ export default function App() {
     }, 600);
 
     return () => clearTimeout(delayDebounce);
-  }, [apiKey]);
+  }, [apiKey, detectedProvider]);
 
   // Sync marked clips with local storage based on active video ID
   useEffect(() => {
@@ -2801,7 +2809,7 @@ Transcript:
                   </span>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <a
-                      href="https://aistudio.google.com/"
+                      href={detectedProvider === 'kimi' ? 'https://platform.kimi.ai/' : 'https://aistudio.google.com/'}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600, transition: 'var(--transition-smooth)' }}
@@ -2869,12 +2877,25 @@ Transcript:
                     ))
                   ) : (
                     <>
-                      <option value="gemini-2.5-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-flash (Fast & recommended - Free tier friendly)</option>
-                      <option value="gemini-2.5-flash-lite" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-flash-lite (Ultra-fast & lightweight)</option>
-                      <option value="gemini-2.0-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.0-flash (Fast & responsive)</option>
-                      <option value="gemini-2.0-flash-lite" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.0-flash-lite (Lightweight flash)</option>
-                      <option value="gemini-1.5-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-1.5-flash (Fallback flash)</option>
-                      <option value="gemini-2.5-pro" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-pro (Creative & complex - High quota)</option>
+                      {detectedProvider === 'kimi' ? (
+                        <>
+                          <option value="kimi-k3" style={{ background: '#0d1324', color: '#fff' }}>kimi-k3 (Flagship - 1M context, strongest reasoning)</option>
+                          <option value="kimi-k3-256k" style={{ background: '#0d1324', color: '#fff' }}>kimi-k3-256k (K3 with 256K context)</option>
+                          <option value="kimi-k2.7" style={{ background: '#0d1324', color: '#fff' }}>kimi-k2.7 (Fast & capable)</option>
+                          <option value="kimi-k2.7-code" style={{ background: '#0d1324', color: '#fff' }}>kimi-k2.7-code (Coding-tuned)</option>
+                          <option value="kimi-k2.6" style={{ background: '#0d1324', color: '#fff' }}>kimi-k2.6 (General-purpose, vision + text)</option>
+                          <option value="kimi-k2.5" style={{ background: '#0d1324', color: '#fff' }}>kimi-k2.5 (Earlier generation)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="gemini-2.5-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-flash (Fast & recommended - Free tier friendly)</option>
+                          <option value="gemini-2.5-flash-lite" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-flash-lite (Ultra-fast & lightweight)</option>
+                          <option value="gemini-2.0-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.0-flash (Fast & responsive)</option>
+                          <option value="gemini-2.0-flash-lite" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.0-flash-lite (Lightweight flash)</option>
+                          <option value="gemini-1.5-flash" style={{ background: '#0d1324', color: '#fff' }}>gemini-1.5-flash (Fallback flash)</option>
+                          <option value="gemini-2.5-pro" style={{ background: '#0d1324', color: '#fff' }}>gemini-2.5-pro (Creative & complex - High quota)</option>
+                        </>
+                      )}
                     </>
                   )}
                 </select>
