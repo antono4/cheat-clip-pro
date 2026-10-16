@@ -40,17 +40,17 @@ export const en = {
 
     // AI Engine settings
     aiSettingsTitle: "AI Engine Settings",
-    apiKeyLabel: "Gemini API Key",
+    apiKeyLabel: "Gemini / Kimi API Key",
     apiKeyRequired: "REQUIRED",
     getFreeKey: "Get free key",
     hideKey: "Hide key",
     showKey: "Show key",
-    apiKeyPlaceholder: "Paste your Gemini API Key here — get one free at aistudio.google.com",
+    apiKeyPlaceholder: "Paste your Gemini (AIza...) or Moonshot/Kimi (sk-...) API key here — Gemini keys are free at aistudio.google.com, Kimi keys at platform.kimi.ai",
     apiKeyErrorHint: "Required — saved locally in browser.",
     aiModelLabel: "AI Model Selection",
     fetchingModels: "Fetching available...",
     resilienceTip: "Free Tier Resilience:",
-    resilienceDesc: "If a model encounters quota limits or errors, Cheat Clip Pro automatically tries all newer and older Flash models (3.x, 2.5, 2.0, 1.5) fetched from your API key until clips are successfully found!",
+    resilienceDesc: "If a model encounters quota limits or errors, Cheat Clip Pro automatically tries newer and older models until clips are successfully found — Gemini Flash tiers (3.x, 2.5, 2.0, 1.5) for Gemini keys, and the Kimi K3/K2 series for Moonshot keys.",
 
     // Customization
     clipCustomizationTitle: "Clip Customization",
@@ -112,7 +112,7 @@ export const en = {
     historyLoadFailed: "Failed to load this history entry.",
   },
   errors: {
-    apiKeyRequired: "A Gemini API Key is required to analyze videos. Get a free key at aistudio.google.com and paste it in the field below.",
+    apiKeyRequired: "A Gemini or Moonshot/Kimi API key is required to analyze videos. Get a free Gemini key at aistudio.google.com, or a Kimi key at platform.kimi.ai, and paste it in the field below.",
     invalidStart: "Invalid start time format. Please use MM:SS (e.g. 29:00), HH:MM:SS, or raw seconds.",
     invalidEnd: "Invalid end time format. Please use MM:SS (e.g. 31:15), HH:MM:SS, or raw seconds.",
     startLessThanEnd: "Start time must be less than end time.",

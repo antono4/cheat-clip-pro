@@ -29,8 +29,14 @@ from backend.schemas.analyze import (
 )
 from backend.services.ai_service import (
     KNOWN_FLASH_MODELS,
+    PROVIDER_KIMI,
+    build_kimi_model_chain,
+    detect_provider,
     get_flash_models_for_key,
+    get_kimi_api_key,
+    kimi_chat_completion,
     list_available_gemini_models,
+    list_available_kimi_models,
 )
 from backend.routers.media import _find_video_file_on_disk
 from backend.utils.media_paths import is_safe_path as _is_safe_path
@@ -203,6 +209,7 @@ def health_check(refresh: bool = False):
         "allow_app_updates": is_update_allowed(),
         "proxy_configured": bool(proxy),
         "gemini_env_configured": has_gemini,
+        "kimi_env_configured": bool(os.environ.get("MOONSHOT_API_KEY") or os.environ.get("KIMI_API_KEY")),
         "supadata_keys_count": len(keys),
         "supadata": supadata_info
     }
@@ -215,10 +222,24 @@ def supadata_usage_endpoint(refresh: bool = False):
 
 
 @router.get("/api/models")
-def list_available_models(api_key: str = ""):
-    """Fetches list of available Gemini models using the user's API key, prioritizing Flash models (newest first)."""
-    models = list_available_gemini_models(api_key)
-    return {"models": models}
+def list_available_models(api_key: str = "", provider: str = ""):
+    """Fetches the available AI models for the supplied key.
+
+    The provider is auto-detected from the key/model, and may also be pinned
+    explicitly with ``?provider=kimi`` or ``?provider=gemini``. The response
+    reports the resolved provider so the UI can label the key field correctly.
+    """
+    resolved = (provider or "").strip().lower()
+    if resolved not in ("kimi", "gemini"):
+        resolved = detect_provider(model="", api_key=api_key)
+
+    if resolved == PROVIDER_KIMI:
+        key = get_kimi_api_key(api_key)
+        if not key:
+            return {"provider": PROVIDER_KIMI, "models": list_available_kimi_models("")}
+        return {"provider": PROVIDER_KIMI, "models": list_available_kimi_models(key)}
+
+    return {"provider": "gemini", "models": list_available_gemini_models(api_key)}
 
 
 def _build_heatmap_fallback_clips(enriched_transcript, duration, duration_mode, lang_code):
@@ -307,12 +328,21 @@ async def analyze_video(request: AnalyzeRequest):
     """Stream real-time progress via Server-Sent Events, then deliver the final result."""
 
     async def _stream():
-        gemini_key = (request.api_key or os.environ.get("GEMINI_API_KEY") or '').strip()
-        is_mock = gemini_key.lower() == "mock"
+        explicit_key = (request.api_key or '').strip()
+        ai_provider = detect_provider(model=request.model or "", api_key=explicit_key)
+        if ai_provider == PROVIDER_KIMI:
+            ai_key = get_kimi_api_key(explicit_key)
+            if not ai_key:
+                yield _sse({"error": "A Moonshot (Kimi) API key is required. Enter it in the web interface or set MOONSHOT_API_KEY.", "status": 400})
+                return
+        else:
+            ai_key = explicit_key or (os.environ.get("GEMINI_API_KEY") or '').strip()
+            if not ai_key:
+                yield _sse({"error": "Gemini API Key is required. Enter it in the web interface.", "status": 400})
+                return
 
-        if not gemini_key:
-            yield _sse({"error": "Gemini API Key is required. Enter it in the web interface.", "status": 400})
-            return
+        gemini_key = ai_key
+        is_mock = ai_key.lower() == "mock"
 
         # ── Step 1: Detect Source Type & Extract Metadata ───────────────────
         req_clean = request.url.strip()
@@ -1007,10 +1037,44 @@ async def analyze_video(request: AnalyzeRequest):
             f"Return clips sorted by virality_score desc."
         )
 
-        requested_model = (request.model or 'gemini-2.5-flash').strip()
-        if any(dep in requested_model.lower() for dep in ['gemini-1.0', 'gemini-pro-vision']):
-            logger.info(f"Requested model '{requested_model}' is outdated. Upgrading to gemini-2.5-flash.")
-            requested_model = 'gemini-2.5-flash'
+        requested_model = (request.model or '').strip()
+        if ai_provider == PROVIDER_KIMI:
+            if not requested_model or not requested_model.lower().startswith(('kimi', 'moonshot')):
+                requested_model = 'kimi-k3'
+            # Kimi has no Gemini-style API-version split; a single client hint is enough.
+            gemini_clients = None
+            client = None
+            models_to_try = build_kimi_model_chain(requested_model)
+            logger.info(f"Kimi fallback chain prepared: {models_to_try}")
+        else:
+            requested_model = requested_model or 'gemini-2.5-flash'
+            if any(dep in requested_model.lower() for dep in ['gemini-1.0', 'gemini-pro-vision']):
+                logger.info(f"Requested model '{requested_model}' is outdated. Upgrading to gemini-2.5-flash.")
+                requested_model = 'gemini-2.5-flash'
+
+            # Build one client per API version. Google's API version can differ per
+            # key/model: models.list may advertise generateContent on v1beta while the
+            # actual call 404s there, and succeeds on v1.
+            gemini_clients = [
+                genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=120000, api_version="v1beta")),
+                genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=120000, api_version="v1")),
+            ]
+            client = gemini_clients[0]
+
+            # Discover all available Flash models for the user's API key
+            discovered_flash = await asyncio.to_thread(get_flash_models_for_key, client)
+
+            # Build models_to_try (capped at top 4 to prevent prolonged delays):
+            models_to_try = [requested_model]
+            for fm in discovered_flash:
+                if fm not in models_to_try:
+                    models_to_try.append(fm)
+            for km in KNOWN_FLASH_MODELS:
+                if km not in models_to_try:
+                    models_to_try.append(km)
+
+            models_to_try = models_to_try[:4]
+            logger.info(f"Flash fallback chain prepared: {models_to_try}")
 
         yield _sse({
             "step": 4,
@@ -1021,31 +1085,6 @@ async def analyze_video(request: AnalyzeRequest):
             "model": requested_model,
             "message": f"Verified language: {lang_name}. Zero-translation rule enforced for {requested_model}."
         })
-
-        # ── Step 4: Gemini API call with dynamic Flash fallback models and retry ───────────
-        # Build one client per API version. Google's API version can differ per
-        # key/model: models.list may advertise generateContent on v1beta while the
-        # actual call 404s there, and succeeds on v1.
-        gemini_clients = [
-            genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=120000, api_version="v1beta")),
-            genai.Client(api_key=gemini_key, http_options=types.HttpOptions(timeout=120000, api_version="v1")),
-        ]
-        client = gemini_clients[0]
-
-        # Discover all available Flash models for the user's API key
-        discovered_flash = await asyncio.to_thread(get_flash_models_for_key, client)
-
-        # Build models_to_try (capped at top 4 to prevent prolonged delays):
-        models_to_try = [requested_model]
-        for fm in discovered_flash:
-            if fm not in models_to_try:
-                models_to_try.append(fm)
-        for km in KNOWN_FLASH_MODELS:
-            if km not in models_to_try:
-                models_to_try.append(km)
-
-        models_to_try = models_to_try[:4]
-        logger.info(f"Flash fallback chain prepared: {models_to_try}")
 
         response = None
         last_error = None
@@ -1082,17 +1121,28 @@ async def analyze_video(request: AnalyzeRequest):
                     "message": f"Calling {model_name} (attempt {attempt + 1}/{MAX_RETRIES})..."
                 })
                 
-                # Execute Gemini call with heartbeat and balanced timeout
-                task = asyncio.create_task(asyncio.to_thread(
-                    _call_gemini_with_api_fallback,
-                    gemini_clients, model_name, prompt,
-                    types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=VideoAnalysis,
-                        temperature=0.2,
-                        max_output_tokens=65536,
+                # Execute the provider call (Gemini SDK or Kimi Chat Completions)
+                # with a heartbeat and balanced timeout.
+                if ai_provider == PROVIDER_KIMI:
+                    call_coro = asyncio.to_thread(
+                        kimi_chat_completion,
+                        gemini_key, model_name, prompt,
+                        VideoAnalysis.model_json_schema(),
+                        180.0,
+                        0.2,
                     )
-                ))
+                else:
+                    call_coro = asyncio.to_thread(
+                        _call_gemini_with_api_fallback,
+                        gemini_clients, model_name, prompt,
+                        types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=VideoAnalysis,
+                            temperature=0.2,
+                            max_output_tokens=65536,
+                        )
+                    )
+                task = asyncio.create_task(call_coro)
                 
                 call_start = asyncio.get_event_loop().time()
                 timed_out = False
@@ -1157,25 +1207,34 @@ async def analyze_video(request: AnalyzeRequest):
                     parsed_data = None
                     if hasattr(resp_candidate, 'parsed') and resp_candidate.parsed is not None:
                         parsed = resp_candidate.parsed
-                        raw_clips = getattr(parsed, 'clips', []) or []
-                        if raw_clips:
-                            parsed_data = {
-                                "summary": getattr(parsed, 'summary', ''),
-                                "clips": [
-                                    {
-                                        "title": sanitize_first_person_title(getattr(c, 'title', ''), channel, lang=lang_code),
-                                        "start_time": getattr(c, 'start_time', 0.0),
-                                        "end_time": getattr(c, 'end_time', 0.0),
-                                        "hook_time": getattr(c, 'hook_time', None),
-                                        "virality_score": getattr(c, 'virality_score', 0),
-                                        "key_quotes": getattr(c, 'key_quotes', []),
-                                        "title_suggestion": sanitize_first_person_title(getattr(c, 'title_suggestion', ''), channel, lang=lang_code),
-                                        "caption_suggestion": getattr(c, 'caption_suggestion', ''),
-                                        "hashtag_suggestion": getattr(c, 'hashtag_suggestion', ''),
-                                    }
-                                    for c in raw_clips
-                                ]
-                            }
+                        # Gemini returns a schema-validated model; Kimi returns the
+                        # decoded dict, so normalise it into the same shape.
+                        if isinstance(parsed, dict):
+                            try:
+                                parsed = VideoAnalysis.model_validate(parsed)
+                            except Exception as e:
+                                logger.warning(f"{model_name} returned JSON that failed schema validation ({e}); using lenient parser.")
+                                parsed = None
+                        if parsed is not None:
+                            raw_clips = getattr(parsed, 'clips', []) or []
+                            if raw_clips:
+                                parsed_data = {
+                                    "summary": getattr(parsed, 'summary', ''),
+                                    "clips": [
+                                        {
+                                            "title": sanitize_first_person_title(getattr(c, 'title', ''), channel, lang=lang_code),
+                                            "start_time": getattr(c, 'start_time', 0.0),
+                                            "end_time": getattr(c, 'end_time', 0.0),
+                                            "hook_time": getattr(c, 'hook_time', None),
+                                            "virality_score": getattr(c, 'virality_score', 0),
+                                            "key_quotes": getattr(c, 'key_quotes', []),
+                                            "title_suggestion": sanitize_first_person_title(getattr(c, 'title_suggestion', ''), channel, lang=lang_code),
+                                            "caption_suggestion": getattr(c, 'caption_suggestion', ''),
+                                            "hashtag_suggestion": getattr(c, 'hashtag_suggestion', ''),
+                                        }
+                                        for c in raw_clips
+                                    ]
+                                }
                     
                     # Lenient fallback parser (repairs truncated/unescaped JSON from text)
                     if parsed_data is None and hasattr(resp_candidate, 'text') and resp_candidate.text:

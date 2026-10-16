@@ -2,7 +2,7 @@
 
 > **AI-powered auto clipper — turn long YouTube videos, Google Drive files, and local uploads into ready-to-post TikToks, Shorts, and Reels with animated subtitles, smart face framing, and batch rendering in minutes.**
 
-Cheat Clip PRO analyzes audience retention data and the video transcript with Google Gemini to find the most engaging moments, then renders them into vertical 1080×1920 clips — complete with animated word-level captions, hook titles, and optional music and watermark.
+Cheat Clip PRO analyzes audience retention data and the video transcript with an AI model — Google Gemini or Moonshot AI's Kimi — to find the most engaging moments, then renders them into vertical 1080×1920 clips — complete with animated word-level captions, hook titles, and optional music and watermark.
 
 This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https://github.com/galihjuansaputra/cheat-clip-pro) with a hardened backend, in-browser rendering, Docker deployment, and a test suite.
 
@@ -10,8 +10,9 @@ This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https
 
 ## ✨ Features
 
-- **AI viral moment detection** — Uses Google Gemini plus YouTube audience-retention heatmaps to score and rank the highest-engagement segments.
-- **Resilient AI pipeline** — Automatically falls back across Gemini Flash models (3.x, 2.5, 2.0, 1.5) and degrades gracefully to heatmap-based clips if the AI is unavailable.
+- **AI viral moment detection** — Uses Google Gemini or Moonshot Kimi plus YouTube audience-retention heatmaps to score and rank the highest-engagement segments.
+- **Choice of AI engine** — Paste either a Gemini key (`AIza...`) or a Moonshot/Kimi key (`sk-...`) and the provider is auto-detected; pick from the Gemini Flash/Pro tiers or the Kimi K3/K2 family.
+- **Resilient AI pipeline** — Automatically falls back across models (Gemini Flash 3.x, 2.5, 2.0, 1.5; Kimi K3 → K2.7 → K2.5) and degrades gracefully to heatmap-based clips if the AI is unavailable.
 - **Multiple input sources** — YouTube URLs, Google Drive share links, or direct video file uploads (MP4, MOV, MKV, WebM, AVI).
 - **Multi-tier transcription** — YouTube transcript API → Supadata cloud proxy → Webshare rotating proxy → local Whisper AI, with custom SRT/TXT upload as a manual fallback.
 - **Vertical clip studio** — 9:16, 1:1, 4:3, and 16:9 layouts, ambient blurred backdrops, and AI active-speaker face centering.
@@ -106,12 +107,23 @@ This starts both servers concurrently:
 
 ---
 
-## 🔑 Get a Free Google Gemini API Key (1 Minute)
+## 🔑 Get an AI API Key (1 Minute)
+
+Cheat Clip PRO supports two AI providers. Paste whichever key you have — the app detects the provider from the key prefix.
+
+**Google Gemini** (free tier available):
 
 1. Go to [Google AI Studio](https://aistudio.google.com/) and sign in.
 2. Click **Get API key** → **Create API key**.
 3. Copy the key (starts with `AIzaSy...`).
-4. Paste it into the **Gemini API Key** field in the app (it is stored only in your browser).
+4. Paste it into the **Gemini / Kimi API Key** field in the app (it is stored only in your browser).
+
+**Moonshot AI Kimi** (Kimi K3, 1M-token context):
+
+1. Go to the [Kimi Open Platform](https://platform.kimi.ai/) and sign in.
+2. Create an API key in the console (starts with `sk-...`).
+3. Paste it into the same field — the model list switches to the Kimi family automatically.
+4. Pick `kimi-k3` for the strongest reasoning, or `kimi-k2.7` for lower latency.
 
 > 💡 **Tip:** Type `mock` in the API Key field to try the full UI with sample data — no API key required.
 
@@ -122,7 +134,7 @@ This starts both servers concurrently:
 1. **Pick a source** — Paste a YouTube URL, a Google Drive share link, or upload a video file.
 2. **Choose a duration** — `~15s` fast hooks, `~30s` standard shorts, `~60s` story clips, or `✨ Auto` (AI adapts to conversation context).
 3. **(Optional) Steer the AI** — Describe the moments you want (e.g. "funny moments", "technical explanations") and set a target clip count.
-4. **Click Analyze** — The pipeline extracts metadata, samples the retention heatmap, retrieves and aligns the transcript, then asks Gemini to find and score viral clips.
+4. **Click Analyze** — The pipeline extracts metadata, samples the retention heatmap, retrieves and aligns the transcript, then asks the selected AI engine to find and score viral clips.
 5. **Customize in Clip Studio** — Frame & crop, face tracking, caption style, hook titles, branding, audio, and hardware acceleration.
 6. **Batch Render** — Render all clips, then download them individually or together as a `.ZIP`.
 
@@ -142,7 +154,8 @@ This starts both servers concurrently:
 Build and run the full stack (frontend bundle + FastAPI + FFmpeg) with Docker Compose:
 
 ```bash
-export GEMINI_API_KEY=your_key_here   # optional server default
+export GEMINI_API_KEY=your_key_here   # optional server default (Google Gemini)
+export MOONSHOT_API_KEY=your_key_here # optional server default (Moonshot/Kimi K3)
 docker compose up --build
 ```
 
@@ -159,6 +172,8 @@ Copy `backend/.env.template` to `backend/.env` (or create a root `.env`) and set
 | Variable | Purpose |
 | --- | --- |
 | `GEMINI_API_KEY` | Server-side default Gemini key (users can still supply their own in the UI). |
+| `MOONSHOT_API_KEY` | Server-side default Moonshot/Kimi key, enabling the Kimi K3/K2 model family (users can still supply their own in the UI). |
+| `MOONSHOT_BASE_URL` | Override the Kimi endpoint (default `https://api.moonshot.ai/v1`) to route through a proxy or OpenAI-compatible aggregator. |
 | `ADMIN_API_KEY` / `CHEAT_CLIP_API_KEY` | Protects destructive endpoints (`/api/system/update`, `/api/system/restart`, `/api/clear-temp`, cleanup). Strongly recommended on public hosts. |
 | `SERVER_MODE` | Set to `1`/`true` in containers to block admin actions unless a key is configured. |
 | `ALLOWED_ORIGINS` | Comma-separated CORS allowlist (defaults cover local dev). |
@@ -191,7 +206,7 @@ The backend exposes a documented FastAPI service. Highlights:
 | `GET` | `/api/render-progress/{batch_id}` | Stream render progress (SSE). |
 | `GET` | `/api/download-batch-zip/{batch_id}` | Download all rendered clips as a `.ZIP`. |
 | `GET` | `/api/hardware-accel` | Report available hardware encoders. |
-| `GET` | `/api/models` | List available Gemini models for a key. |
+| `GET` | `/api/models` | List available AI models for a key (Gemini or Kimi, auto-detected; override with `?provider=`). |
 | `GET`/`POST`/`DELETE` | `/api/cookies` | Manage YouTube cookies. |
 | `GET` | `/api/system/version` · `/api/system/check-update` | Version and update status. |
 | `POST` | `/api/system/update` · `/api/system/restart` | Admin: update and restart. |
@@ -226,7 +241,7 @@ FFmpeg was built without the `libass` subtitle filter. On macOS run `brew instal
 YouTube is throttling unauthenticated downloads. Click the 🍪 **Cookies** button, export your cookies with a browser extension such as *Get cookies.txt locally*, and paste them into the app to unlock 1080p downloads.
 
 **Analysis fails or returns no clips**
-Check your Gemini API key and quota. The app retries across multiple Flash models, and will fall back to heatmap-based clips if the AI cannot be reached. You can also upload a custom `.srt`/`.txt` subtitle file if auto-transcription fails.
+Check your Gemini or Kimi API key and quota. The app retries across multiple models (Gemini Flash tiers or the Kimi K3/K2 series), and will fall back to heatmap-based clips if the AI cannot be reached. You can also upload a custom `.srt`/`.txt` subtitle file if auto-transcription fails.
 
 **Does it work on AMD GPUs and Macs?**
 Yes — AMD (`h264_amf`), Intel (`h264_qsv`), and Apple/CPU (`libx264`) are all supported. Switch encoders anytime in Render Settings.

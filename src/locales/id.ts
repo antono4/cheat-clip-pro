@@ -42,17 +42,17 @@ export const id: Translations = {
 
     // AI Engine settings
     aiSettingsTitle: "Pengaturan Mesin AI",
-    apiKeyLabel: "Gemini API Key",
+    apiKeyLabel: "Gemini / Kimi API Key",
     apiKeyRequired: "WAJIB",
     getFreeKey: "Dapatkan API key gratis",
     hideKey: "Sembunyikan",
     showKey: "Tampilkan",
-    apiKeyPlaceholder: "Tempel Gemini API Key di sini — dapatkan gratis di aistudio.google.com",
+    apiKeyPlaceholder: "Tempel API key Gemini (AIza...) atau Moonshot/Kimi (sk-...) di sini — key Gemini gratis di aistudio.google.com, key Kimi di platform.kimi.ai",
     apiKeyErrorHint: "Wajib diisi — tersimpan lokal di browser Anda.",
     aiModelLabel: "Pilihan Model AI",
     fetchingModels: "Mengambil daftar model...",
     resilienceTip: "Ketahanan Kuota Gratis:",
-    resilienceDesc: "Jika model mencapai batas kuota atau error, Cheat Clip Pro secara dinamis mencoba seluruh model Flash baru maupun lama (3.x, 2.5, 2.0, 1.5) dari API key Anda hingga klip berhasil ditemukan!",
+    resilienceDesc: "Jika model mencapai batas kuota atau error, Cheat Clip Pro secara dinamis mencoba model baru maupun lama hingga klip berhasil ditemukan — seri Gemini Flash (3.x, 2.5, 2.0, 1.5) untuk key Gemini, dan seri Kimi K3/K2 untuk key Moonshot.",
 
     // Customization
     clipCustomizationTitle: "Kustomisasi Klip",
@@ -114,7 +114,7 @@ export const id: Translations = {
     historyLoadFailed: "Gagal memuat entri riwayat ini.",
   },
   errors: {
-    apiKeyRequired: "Gemini API Key wajib diisi untuk menganalisis video. Dapatkan API key gratis di aistudio.google.com lalu tempel di kolom bawah.",
+    apiKeyRequired: "API key Gemini atau Moonshot/Kimi wajib diisi untuk menganalisis video. Dapatkan key Gemini gratis di aistudio.google.com, atau key Kimi di platform.kimi.ai, lalu tempel di kolom bawah.",
     invalidStart: "Format waktu mulai tidak valid. Gunakan format MM:SS (misal: 29:00), HH:MM:SS, atau detik.",
     invalidEnd: "Format waktu selesai tidak valid. Gunakan format MM:SS (misal: 31:15), HH:MM:SS, atau detik.",
     startLessThanEnd: "Waktu mulai harus lebih kecil dari waktu selesai.",
