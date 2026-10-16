@@ -223,6 +223,185 @@ def test_generate_prompt_endpoint_end_to_end(fake_prompt_provider, monkeypatch):
     assert "Heatmaps show where viewers rewatch" in data["transcript"]
 
 
+# ── Prompt extraction batch ─────────────────────────────────────────────────
+
+def _patch_youtube(monkeypatch, transcript_by_id):
+    """Routes YouTube metadata/transcript lookups to canned per-video data.
+
+    ``transcript_by_id`` maps a video id to its transcript lines; an unknown id
+    yields no transcript, which is how a real blocked fetch behaves.
+    """
+    import backend.routers.video_gen as video_gen_router
+
+    monkeypatch.setattr(video_gen_router, "fetch_video_metadata", lambda url, *_a, **_k: {
+        "title": f"Video {url.rsplit('=', 1)[-1]}", "channel": "DataChannel", "duration": 120.0,
+    })
+    monkeypatch.setattr(
+        video_gen_router, "fetch_transcript",
+        lambda video_id, *_a, **_k: transcript_by_id.get(video_id, []),
+    )
+
+
+def _post_batch(client, urls, **extra):
+    return client.post("/api/generate-prompts-batch", json={
+        "urls": urls,
+        "api_key": "sk-test-key-1234567890",
+        "model": "kimi-k3",
+        **extra,
+    })
+
+
+def test_generate_prompts_batch_endpoint_rejects_missing_key():
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+    resp = client.post("/api/generate-prompts-batch", json={
+        "urls": ["https://www.youtube.com/watch?v=dQw4w9WgXcQ"], "api_key": "",
+    })
+    assert resp.status_code == 400
+    assert "API key" in resp.json()["detail"]
+
+
+def test_generate_prompts_batch_endpoint_rejects_empty_urls():
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+    resp = _post_batch(client, ["   ", ""])
+    assert resp.status_code == 400
+    assert "At least one" in resp.json()["detail"]
+
+
+def test_generate_prompts_batch_status_404_for_unknown_batch():
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+    resp = client.get("/api/generate-prompts-batch-status/nope")
+    assert resp.status_code == 404
+
+
+def test_generate_prompts_batch_isolates_item_failures(fake_prompt_provider, monkeypatch):
+    """One unreachable video must not sink the rest of the batch."""
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    fake_prompt_provider.reply_content = json.dumps({
+        "prompt": "A documentary scene about heatmaps.",
+        "summary": "About heatmaps.",
+        "camera": "35mm static",
+        "shot_list": [{"time": "0-5s", "description": "Presenter at a desk"}],
+    })
+    _patch_youtube(monkeypatch, {
+        "aaaaaaaaaaa": [{"text": "Heatmaps show rewatching.", "start": 5.0}],
+        # bbbbbbbbbbb intentionally absent → no transcript → item fails
+        "ccccccccccc": [{"text": "Clips come from the peaks.", "start": 12.0}],
+    })
+
+    client = TestClient(app)
+    resp = _post_batch(client, [
+        "https://www.youtube.com/watch?v=aaaaaaaaaaa",
+        "https://www.youtube.com/watch?v=bbbbbbbbbbb",
+        "https://www.youtube.com/watch?v=ccccccccccc",
+    ])
+    assert resp.status_code == 200, resp.text
+    batch_id = resp.json()["batch_id"]
+    assert resp.json()["total"] == 3
+
+    # TestClient runs background tasks before returning, so the batch is done.
+    status = client.get(f"/api/generate-prompts-batch-status/{batch_id}")
+    assert status.status_code == 200, status.text
+    data = status.json()
+
+    assert data["total"] == 3
+    assert data["completed"] == 2
+    assert data["failed"] == 1
+    assert data["status"] == "completed"
+
+    by_url = {item["url"]: item for item in data["items"]}
+    ok = by_url["https://www.youtube.com/watch?v=aaaaaaaaaaa"]
+    assert ok["status"] == "completed"
+    assert ok["prompt"] == "A documentary scene about heatmaps."
+    assert ok["title"] == "Video aaaaaaaaaaa"
+    assert ok["camera"] == "35mm static"
+    assert ok["shot_list"][0]["time"] == "0-5s"
+
+    bad = by_url["https://www.youtube.com/watch?v=bbbbbbbbbbb"]
+    assert bad["status"] == "error"
+    assert "transcript" in bad["error"].lower()
+    assert bad["prompt"] is None
+
+
+def test_generate_prompts_batch_reports_error_when_all_fail(fake_prompt_provider, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    _patch_youtube(monkeypatch, {})  # no video has a transcript
+
+    client = TestClient(app)
+    resp = _post_batch(client, [
+        "https://www.youtube.com/watch?v=aaaaaaaaaaa",
+        "https://www.youtube.com/watch?v=bbbbbbbbbbb",
+    ])
+    batch_id = resp.json()["batch_id"]
+
+    data = client.get(f"/api/generate-prompts-batch-status/{batch_id}").json()
+    assert data["status"] == "error"
+    assert data["failed"] == 2
+    assert data["completed"] == 0
+
+
+def test_generate_prompts_batch_applies_style_hint_to_every_item(fake_prompt_provider, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    fake_prompt_provider.reply_content = json.dumps({"prompt": "p", "summary": "s"})
+    _patch_youtube(monkeypatch, {
+        "aaaaaaaaaaa": [{"text": "one", "start": 1.0}],
+        "bbbbbbbbbbb": [{"text": "two", "start": 2.0}],
+    })
+
+    client = TestClient(app)
+    resp = _post_batch(client, [
+        "https://www.youtube.com/watch?v=aaaaaaaaaaa",
+        "https://www.youtube.com/watch?v=bbbbbbbbbbb",
+    ], style_hint="anime", extra_instructions="keep it under 10 seconds")
+    batch_id = resp.json()["batch_id"]
+    client.get(f"/api/generate-prompts-batch-status/{batch_id}")
+
+    # Two videos → two provider calls, each carrying the shared style/extra.
+    assert len(fake_prompt_provider.requests_seen) == 2
+    for sent in fake_prompt_provider.requests_seen:
+        content = sent["body"]["messages"][0]["content"]
+        assert "anime" in content
+        assert "keep it under 10 seconds" in content
+
+
+# ── Prompt batch bookkeeping ────────────────────────────────────────────────
+
+def test_summarise_prompt_batch_stays_running_while_items_pend():
+    from backend.services.prompt_batch_service import create_prompt_batch, summarise_prompt_batch
+
+    batch = create_prompt_batch("b1", ["u1", "u2"])
+    assert batch["status"] == "running"
+    batch["items"][0]["status"] = "completed"
+    summarise_prompt_batch(batch)
+    assert batch["status"] == "running"  # u2 is still pending
+    assert batch["completed"] == 1
+
+    batch["items"][1]["status"] = "error"
+    summarise_prompt_batch(batch)
+    assert batch["status"] == "completed"  # partial success is not an error
+    assert batch["failed"] == 1
+
+
 # ── Video generation job lifecycle ──────────────────────────────────────────
 
 class _FakeVideo:

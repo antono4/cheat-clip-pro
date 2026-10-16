@@ -11,6 +11,8 @@ Two capabilities:
 
 import asyncio
 import os
+import time
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -28,6 +30,8 @@ from backend.config import (
 from backend.routers.media import _find_video_file_on_disk
 from backend.schemas.video_gen import (
     GenerateVideoRequest,
+    PromptBatchStatusResponse,
+    PromptFromVideoBatchRequest,
     PromptFromVideoRequest,
     PromptFromVideoResponse,
     ShotListItem,
@@ -41,6 +45,13 @@ from backend.services.ai_service import (
 from backend.services.gdrive_service import (
     download_google_drive_video,
     is_google_drive_url,
+)
+from backend.services.prompt_batch_service import (
+    PROMPT_BATCHES,
+    apply_prompt_error,
+    apply_prompt_result,
+    create_prompt_batch,
+    summarise_prompt_batch,
 )
 from backend.services.video_gen_service import (
     DEFAULT_VEO_MODEL,
@@ -187,6 +198,20 @@ async def generate_prompt_from_video(request: PromptFromVideoRequest):
             detail="Prompt extraction needs a real API key; the 'mock' key is not supported here.",
         )
 
+    return await _extract_prompt(api_key, model, request)
+
+
+async def _extract_prompt(
+    api_key: str,
+    model: str,
+    request: PromptFromVideoRequest,
+) -> PromptFromVideoResponse:
+    """Shared extraction path used by the single and batch endpoints.
+
+    Keeping this in one place means the batch endpoint inherits every guard the
+    single endpoint has (transcript handling, empty-prompt detection, shot list
+    normalisation) instead of duplicating them.
+    """
     source = await _load_source_transcript(request)
     transcript_text = source["transcript"][:MAX_TRANSCRIPT_CHARS]
 
@@ -241,6 +266,90 @@ async def generate_prompt_from_video(request: PromptFromVideoRequest):
         shot_list=shot_list,
         transcript=source["transcript"],
     )
+
+
+async def _run_prompt_batch(
+    batch_id: str,
+    api_key: str,
+    model: str,
+    request: PromptFromVideoBatchRequest,
+) -> None:
+    """Processes each batch item sequentially, isolating per-item failures.
+
+    Sequential rather than concurrent on purpose: every item spends most of its
+    time waiting on a transcript fetch and a provider rate limit, and hammering
+    the provider in parallel is a reliable way to get throttled.
+    """
+    batch = PROMPT_BATCHES.get(batch_id)
+    if batch is None:
+        return
+
+    for item in batch["items"]:
+        item["status"] = "processing"
+        summarise_prompt_batch(batch)
+        PROMPT_BATCHES[batch_id] = batch
+
+        single = PromptFromVideoRequest(
+            url=item["url"],
+            api_key=api_key,
+            model=model,
+            style_hint=request.style_hint,
+            extra_instructions=request.extra_instructions,
+            proxy=request.proxy,
+            cookies=request.cookies,
+            subtitles=request.subtitles,
+            subtitles_filename=request.subtitles_filename,
+        )
+        try:
+            result = await _extract_prompt(api_key, model, single)
+            apply_prompt_result(item, result.model_dump())
+        except HTTPException as e:
+            apply_prompt_error(item, str(e.detail))
+        except Exception as e:
+            logger.error(f"Prompt batch item failed for {item['url']}: {e}")
+            apply_prompt_error(item, f"Could not generate a prompt: {e}")
+
+        summarise_prompt_batch(batch)
+        PROMPT_BATCHES[batch_id] = batch
+
+
+@router.post("/api/generate-prompts-batch")
+async def generate_prompts_batch(
+    request: PromptFromVideoBatchRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Starts a background batch that extracts one prompt per source video."""
+    urls = [u.strip() for u in (request.urls or []) if (u or "").strip()]
+    if not urls:
+        raise HTTPException(status_code=400, detail="At least one video URL is required.")
+
+    model = (request.model or "").strip()
+    api_key = _resolve_request_key(request.api_key or "", model)
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="An API key is required. Enter a Gemini or Moonshot/Kimi key first.",
+        )
+    if api_key.lower() == "mock":
+        raise HTTPException(
+            status_code=400,
+            detail="Prompt extraction needs a real API key; the 'mock' key is not supported here.",
+        )
+
+    batch_id = f"promptbatch_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+    PROMPT_BATCHES[batch_id] = create_prompt_batch(batch_id, urls)
+
+    background_tasks.add_task(_run_prompt_batch, batch_id, api_key, model, request)
+    return {"batch_id": batch_id, "total": len(urls)}
+
+
+@router.get("/api/generate-prompts-batch-status/{batch_id}", response_model=PromptBatchStatusResponse)
+async def get_prompt_batch_status(batch_id: str):
+    """Reports per-item progress for a prompt extraction batch."""
+    batch = PROMPT_BATCHES.get(batch_id)
+    if batch is None:
+        raise HTTPException(status_code=404, detail="Prompt batch not found or expired.")
+    return PromptBatchStatusResponse(**batch)
 
 
 @router.get("/api/video-models")

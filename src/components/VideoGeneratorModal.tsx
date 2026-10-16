@@ -42,6 +42,35 @@ interface GeneratedFile {
   download_url: string;
 }
 
+interface BatchItem {
+  url: string;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+  title?: string;
+  prompt?: string;
+  error?: string;
+}
+
+interface BatchStatus {
+  batch_id: string;
+  status: 'running' | 'completed' | 'error';
+  total: number;
+  completed: number;
+  failed: number;
+  items: BatchItem[];
+}
+
+// Style presets fill the free-text style field. Values stay in English because
+// the backend forwards them verbatim into an English technical prompt; the
+// labels are localised separately.
+const STYLE_PRESETS = [
+  'cinematic realism',
+  'documentary',
+  'anime',
+  '3D animation',
+  'vintage film',
+  'hyperreal macro',
+] as const;
+
 interface GenerationStatus {
   job_id: string;
   status: string;
@@ -79,6 +108,11 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   const [extractError, setExtractError] = useState<string | null>(null);
   const [promptResult, setPromptResult] = useState<PromptResult | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Batch mode: a newline-separated list of sources instead of one URL.
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [batchUrls, setBatchUrls] = useState('');
+  const [batchStatus, setBatchStatus] = useState<BatchStatus | null>(null);
 
   // Prompt -> video state
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -160,6 +194,84 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
     setPrompt(promptResult.prompt);
     setNegativePrompt(promptResult.negative_prompt || '');
     setTab('toVideo');
+  };
+
+  const batchPollRef = useRef<number | null>(null);
+
+  const stopBatchPolling = useCallback(() => {
+    if (batchPollRef.current !== null) {
+      window.clearInterval(batchPollRef.current);
+      batchPollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => stopBatchPolling, [stopBatchPolling]);
+
+  const handleBatchExtract = async () => {
+    const urls = batchUrls
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (!urls.length) return;
+
+    stopBatchPolling();
+    setIsExtracting(true);
+    setExtractError(null);
+    setPromptResult(null);
+    setBatchStatus(null);
+
+    try {
+      const resp = await resilientFetch('/api/generate-prompts-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          urls,
+          api_key: apiKey,
+          model,
+          style_hint: styleHint.trim() || null,
+          extra_instructions: extraInstructions.trim() || null,
+        }),
+        silent: true,
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data.detail || v.batchFailed);
+      }
+      const batchId = data.batch_id as string;
+
+      // Poll until every item settles. The backend does the work in the
+      // background, so this only reads progress; it never re-submits.
+      batchPollRef.current = window.setInterval(async () => {
+        try {
+          const statusResp = await resilientFetch(
+            `/api/generate-prompts-batch-status/${batchId}`,
+            { silent: true },
+          );
+          if (!statusResp.ok) return;
+          const status = (await statusResp.json()) as BatchStatus;
+          setBatchStatus(status);
+          if (status.status !== 'running') {
+            stopBatchPolling();
+            setIsExtracting(false);
+          }
+        } catch {
+          /* transient poll failure: keep the interval and try again */
+        }
+      }, 2500);
+    } catch (err) {
+      setExtractError(errorMessage(err, v.batchFailed));
+      setIsExtracting(false);
+    }
+  };
+
+  const handleCopyBatchPrompt = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setExtractError(v.copyFailed);
+    }
   };
 
   const handleCopyPrompt = async () => {
@@ -295,17 +407,51 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
 
         {tab === 'toPrompt' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>{v.toPromptHint}</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+              {isBatchMode ? v.batchHint : v.toPromptHint}
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {([false, true] as const).map((mode) => (
+                <button
+                  key={String(mode)}
+                  type="button"
+                  onClick={() => { setIsBatchMode(mode); setExtractError(null); }}
+                  style={{
+                    padding: '0.3rem 0.7rem',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: isBatchMode === mode ? '1px solid var(--primary)' : '1px solid rgba(var(--tint), 0.12)',
+                    background: isBatchMode === mode ? 'rgba(255,94,58,0.15)' : 'rgba(var(--tint), 0.04)',
+                    color: isBatchMode === mode ? 'var(--primary)' : 'var(--text-secondary)',
+                  }}
+                >
+                  {mode ? `📚 ${v.batchToggle}` : `1️⃣ ${v.singleToggle}`}
+                </button>
+              ))}
+            </div>
 
             <div>
-              <label style={labelStyle}>{v.sourceLabel}</label>
-              <input
-                type="text"
-                style={fieldStyle}
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder={v.sourcePlaceholder}
-              />
+              <label style={labelStyle}>{isBatchMode ? v.batchSourceLabel : v.sourceLabel}</label>
+              {isBatchMode ? (
+                <textarea
+                  value={batchUrls}
+                  onChange={(e) => setBatchUrls(e.target.value)}
+                  rows={4}
+                  placeholder={v.batchSourcePlaceholder}
+                  style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.5 }}
+                />
+              ) : (
+                <input
+                  type="text"
+                  style={fieldStyle}
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder={v.sourcePlaceholder}
+                />
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -318,6 +464,30 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                   onChange={(e) => setStyleHint(e.target.value)}
                   placeholder={v.stylePlaceholder}
                 />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.4rem' }}>
+                  {STYLE_PRESETS.map((preset) => {
+                    const active = styleHint.trim().toLowerCase() === preset.toLowerCase();
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setStyleHint(active ? '' : preset)}
+                        style={{
+                          padding: '0.22rem 0.55rem',
+                          borderRadius: '12px',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          border: active ? '1px solid var(--primary)' : '1px solid rgba(var(--tint), 0.12)',
+                          background: active ? 'rgba(255,94,58,0.15)' : 'rgba(var(--tint), 0.04)',
+                          color: active ? 'var(--primary)' : 'var(--text-secondary)',
+                        }}
+                      >
+                        {v.stylePresets[preset]}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -335,16 +505,70 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
             <button
               type="button"
               className="glowing-btn"
-              disabled={isExtracting || !url.trim()}
-              onClick={handleExtractPrompt}
-              style={{ padding: '0.7rem 1rem', borderRadius: '8px', fontWeight: 700, opacity: isExtracting || !url.trim() ? 0.6 : 1 }}
+              disabled={isExtracting || (isBatchMode ? !batchUrls.trim() : !url.trim())}
+              onClick={isBatchMode ? handleBatchExtract : handleExtractPrompt}
+              style={{ padding: '0.7rem 1rem', borderRadius: '8px', fontWeight: 700, opacity: isExtracting || (isBatchMode ? !batchUrls.trim() : !url.trim()) ? 0.6 : 1 }}
             >
-              {isExtracting ? `⏳ ${v.extracting}` : `📝 ${v.extractBtn}`}
+              {isExtracting
+                ? `⏳ ${v.extracting}`
+                : `📝 ${isBatchMode ? v.batchExtractBtn : v.extractBtn}`}
             </button>
 
             {extractError && (
               <div style={{ padding: '0.7rem 0.85rem', borderRadius: '8px', background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.35)', color: '#fca5a5', fontSize: '0.82rem' }}>
                 {extractError}
+              </div>
+            )}
+
+            {isBatchMode && batchStatus && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', padding: '0.9rem', borderRadius: '10px', background: 'rgba(var(--tint), 0.03)', border: '1px solid rgba(var(--tint), 0.08)' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                  {v.batchProgress
+                    .replace('{done}', String(batchStatus.completed))
+                    .replace('{failed}', String(batchStatus.failed))
+                    .replace('{total}', String(batchStatus.total))}
+                </div>
+                {batchStatus.items.map((item, i) => (
+                  <div key={`${item.url}-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', padding: '0.55rem 0.65rem', borderRadius: '8px', background: 'rgba(var(--tint), 0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.76rem' }}>
+                      <span>{item.status === 'completed' ? '✅' : item.status === 'error' ? '❌' : '⏳'}</span>
+                      <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.title || item.url}
+                      </span>
+                    </div>
+                    {item.error && (
+                      <div style={{ fontSize: '0.74rem', color: '#fca5a5' }}>{item.error}</div>
+                    )}
+                    {item.prompt && (
+                      <>
+                        <textarea
+                          readOnly
+                          value={item.prompt}
+                          rows={3}
+                          style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.5, fontSize: '0.78rem' }}
+                        />
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            className="cookie-header-btn"
+                            onClick={() => handleCopyBatchPrompt(item.prompt as string)}
+                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.72rem' }}
+                          >
+                            📋 {v.copyBtn}
+                          </button>
+                          <button
+                            type="button"
+                            className="cookie-header-btn"
+                            onClick={() => { setPrompt(item.prompt as string); setTab('toVideo'); }}
+                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.72rem' }}
+                          >
+                            ✨ {v.usePromptBtn}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 

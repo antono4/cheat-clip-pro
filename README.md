@@ -161,10 +161,23 @@ Cheat Clip PRO supports two AI providers. Paste whichever key you have — the a
 
 Click **🎬 AI Video** in the header to open the generator. It has two tabs that feed each other:
 
-- **Video → Prompt** — Paste a YouTube URL, Google Drive link, or uploaded file. Cheat Clip PRO fetches the transcript and asks your AI engine (Gemini or Kimi) to write a portable text-to-video prompt, broken into subject, action, setting, camera, lighting, audio, a negative prompt, and a shot-by-shot list. Optionally steer it with a visual style or extra instructions.
+- **Video → Prompt** — Paste a YouTube URL, Google Drive link, or uploaded file. Cheat Clip PRO fetches the transcript and asks your AI engine (Gemini or Kimi) to write a portable text-to-video prompt, broken into subject, action, setting, camera, lighting, audio, a negative prompt, and a shot-by-shot list. Pick a visual style from the preset chips (Cinematic, Documentary, Anime, 3D animation, Vintage film, Macro) or type your own, and add extra instructions. Switch to **Batch** to paste many videos at once — one per line — and get a prompt for each; a video that fails is reported on its own and does not stop the rest.
 - **Prompt → Video** — Paste any prompt (or press **Generate video from this prompt** to carry one over) and Google Veo renders it. Choose the Veo model, aspect ratio (16:9 or 9:16), resolution, duration (4/6/8s), and how many variants to produce. Progress is polled live and finished clips play inline with a download button.
 
 Veo generation needs a Google Gemini key — Moonshot/Kimi keys can write prompts but cannot render video, and the API returns a clear message if you try.
+
+### Video → prompt from the command line
+
+The `.agents/skills/video-to-prompt/` skill documents this workflow for agents and ships a script that drives a running backend:
+
+```bash
+python3 .agents/skills/video-to-prompt/scripts/video_to_prompt.py \
+  --url "https://www.youtube.com/watch?v=..." \
+  --api-key "$GEMINI_API_KEY" \
+  --style "cinematic realism"
+```
+
+Pass `--batch urls.txt --wait` to extract prompts for several videos, or `--json` for the raw response.
 
 ### Clip Studio reference
 
@@ -236,6 +249,8 @@ The backend exposes a documented FastAPI service. Highlights:
 | `GET` | `/api/hardware-accel` | Report available hardware encoders. |
 | `GET` | `/api/models` | List available AI models for a key (Gemini or Kimi, auto-detected; override with `?provider=`). |
 | `POST` | `/api/generate-prompt` | Extract a structured text-to-video prompt from a YouTube/GDrive/uploaded video. |
+| `POST` | `/api/generate-prompts-batch` | Start a batch of prompt extractions from a list of video URLs (returns a `batch_id`). |
+| `GET` | `/api/generate-prompts-batch-status/{batch_id}` | Poll a prompt batch for per-video progress and results. |
 | `GET` | `/api/video-models` | List the Veo models available for video generation. |
 | `POST` | `/api/generate-video` | Start a Veo text-to-video job from a prompt (returns a `job_id`). |
 | `GET` | `/api/generate-video-status/{job_id}` | Poll a video generation job for progress and results. |

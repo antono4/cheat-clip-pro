@@ -19,6 +19,9 @@ from backend.schemas.downloads import (
 )
 from backend.schemas.video_gen import (
     PromptFromVideoRequest,
+    PromptFromVideoBatchRequest,
+    PromptBatchItem,
+    PromptBatchStatusResponse,
     PromptFromVideoResponse,
     ShotListItem,
     GenerateVideoRequest,
@@ -41,6 +44,9 @@ __all__ = [
     "RawClipDownloadRequest",
     "CookiesSaveRequest",
     "PromptFromVideoRequest",
+    "PromptFromVideoBatchRequest",
+    "PromptBatchItem",
+    "PromptBatchStatusResponse",
     "PromptFromVideoResponse",
     "ShotListItem",
     "GenerateVideoRequest",
