@@ -13,6 +13,7 @@ This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https
 - **AI viral moment detection** — Uses Google Gemini or Moonshot Kimi plus YouTube audience-retention heatmaps to score and rank the highest-engagement segments.
 - **Choice of AI engine** — Paste either a Gemini key (`AIza...`) or a Moonshot/Kimi key (`sk-...`) and the provider is auto-detected; pick from the Gemini Flash/Pro tiers or the Kimi K3/K2 family.
 - **Resilient AI pipeline** — Automatically falls back across models (Gemini Flash 3.x, 2.5, 2.0, 1.5; Kimi K3 → K2.7 → K2.5) and degrades gracefully to heatmap-based clips if the AI is unavailable.
+- **Video → prompt → video** — Turn any source video into a reusable text-to-video prompt (subject, action, setting, camera, lighting, audio and a shot-by-shot list), then feed that prompt to Google Veo to render a brand-new clip. Both directions live in one modal.
 - **Multiple input sources** — YouTube URLs, Google Drive share links, or direct video file uploads (MP4, MOV, MKV, WebM, AVI).
 - **Multi-tier transcription** — YouTube transcript API → Supadata cloud proxy → Webshare rotating proxy → local Whisper AI, with custom SRT/TXT upload as a manual fallback.
 - **Vertical clip studio** — 9:16, 1:1, 4:3, and 16:9 layouts, ambient blurred backdrops, and AI active-speaker face centering.
@@ -138,6 +139,15 @@ Cheat Clip PRO supports two AI providers. Paste whichever key you have — the a
 5. **Customize in Clip Studio** — Frame & crop, face tracking, caption style, hook titles, branding, audio, and hardware acceleration.
 6. **Batch Render** — Render all clips, then download them individually or together as a `.ZIP`.
 
+### Video → prompt → video
+
+Click **🎬 AI Video** in the header to open the generator. It has two tabs that feed each other:
+
+- **Video → Prompt** — Paste a YouTube URL, Google Drive link, or uploaded file. Cheat Clip PRO fetches the transcript and asks your AI engine (Gemini or Kimi) to write a portable text-to-video prompt, broken into subject, action, setting, camera, lighting, audio, a negative prompt, and a shot-by-shot list. Optionally steer it with a visual style or extra instructions.
+- **Prompt → Video** — Paste any prompt (or press **Generate video from this prompt** to carry one over) and Google Veo renders it. Choose the Veo model, aspect ratio (16:9 or 9:16), resolution, duration (4/6/8s), and how many variants to produce. Progress is polled live and finished clips play inline with a download button.
+
+Veo generation needs a Google Gemini key — Moonshot/Kimi keys can write prompts but cannot render video, and the API returns a clear message if you try.
+
 ### Clip Studio reference
 
 - **Canvas & aspect ratio** — 9:16 Full, 1:1 Square, 4:3 Standard, 16:9 Letterbox, or true 16:9 Landscape.
@@ -171,7 +181,7 @@ Copy `backend/.env.template` to `backend/.env` (or create a root `.env`) and set
 
 | Variable | Purpose |
 | --- | --- |
-| `GEMINI_API_KEY` | Server-side default Gemini key (users can still supply their own in the UI). |
+| `GEMINI_API_KEY` | Server-side default Gemini key (users can still supply their own in the UI). Also required for Veo video generation, which has no Moonshot equivalent. |
 | `MOONSHOT_API_KEY` | Server-side default Moonshot/Kimi key, enabling the Kimi K3/K2 model family (users can still supply their own in the UI). |
 | `MOONSHOT_BASE_URL` | Override the Kimi endpoint (default `https://api.moonshot.ai/v1`) to route through a proxy or OpenAI-compatible aggregator. |
 | `ADMIN_API_KEY` / `CHEAT_CLIP_API_KEY` | Protects destructive endpoints (`/api/system/update`, `/api/system/restart`, `/api/clear-temp`, cleanup). Strongly recommended on public hosts. |
@@ -207,6 +217,11 @@ The backend exposes a documented FastAPI service. Highlights:
 | `GET` | `/api/download-batch-zip/{batch_id}` | Download all rendered clips as a `.ZIP`. |
 | `GET` | `/api/hardware-accel` | Report available hardware encoders. |
 | `GET` | `/api/models` | List available AI models for a key (Gemini or Kimi, auto-detected; override with `?provider=`). |
+| `POST` | `/api/generate-prompt` | Extract a structured text-to-video prompt from a YouTube/GDrive/uploaded video. |
+| `GET` | `/api/video-models` | List the Veo models available for video generation. |
+| `POST` | `/api/generate-video` | Start a Veo text-to-video job from a prompt (returns a `job_id`). |
+| `GET` | `/api/generate-video-status/{job_id}` | Poll a video generation job for progress and results. |
+| `GET` | `/api/download-generated/{file_name}` | Download a generated video. |
 | `GET`/`POST`/`DELETE` | `/api/cookies` | Manage YouTube cookies. |
 | `GET` | `/api/system/version` · `/api/system/check-update` | Version and update status. |
 | `POST` | `/api/system/update` · `/api/system/restart` | Admin: update and restart. |

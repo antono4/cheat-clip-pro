@@ -16,6 +16,9 @@ const ClipStudioSection = lazy(() =>
 const ClipTrimmerModal = lazy(() =>
   import('./components/ClipTrimmerModal').then((m) => ({ default: m.ClipTrimmerModal }))
 );
+const VideoGeneratorModal = lazy(() =>
+  import('./components/VideoGeneratorModal').then((m) => ({ default: m.VideoGeneratorModal }))
+);
 
 // The FFmpeg WebAssembly renderer is heavy (~hundreds of KB) and only needed when
 // the user actually renders a clip in the browser, so load it on demand.
@@ -61,6 +64,7 @@ export default function App() {
   const detectedProvider: 'gemini' | 'kimi' = apiKey.trim().startsWith('sk-') ? 'kimi' : 'gemini';
   const [isCookiesModalOpen, setIsCookiesModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isVideoGenModalOpen, setIsVideoGenModalOpen] = useState(false);
   const [allowAppUpdates, setAllowAppUpdates] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
@@ -2303,6 +2307,28 @@ Transcript:
           </div>
         </div>
         <div className="header-nav" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <button
+            type="button"
+            className="cookie-header-btn"
+            onClick={() => setIsVideoGenModalOpen(true)}
+            style={{
+              padding: '0.45rem 0.85rem',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title={t.videoGen.openBtnTooltip}
+          >
+            <span>🎬 {t.videoGen.openBtn}</span>
+          </button>
           <button
             type="button"
             className="cookie-header-btn"
@@ -4790,6 +4816,18 @@ Transcript:
         isOpen={isUpdateModalOpen}
         onClose={() => setIsUpdateModalOpen(false)}
       />
+
+      {/* AI Video Generator: video -> prompt -> video */}
+      {isVideoGenModalOpen && (
+        <Suspense fallback={null}>
+          <VideoGeneratorModal
+            onClose={() => setIsVideoGenModalOpen(false)}
+            apiKey={apiKey}
+            model={selectedModel}
+            initialUrl={result?.video_url || url}
+          />
+        </Suspense>
+      )}
 
       {/* Clip Trimmer & Context Editor Modal */}
       <Suspense fallback={null}>

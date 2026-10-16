@@ -4,6 +4,7 @@ from backend.routers.downloads import router as downloads_router
 from backend.routers.media import router as media_router
 from backend.routers.render import router as render_router
 from backend.routers.system import router as system_router
+from backend.routers.video_gen import router as video_gen_router
 
 __all__ = [
     "analyze_router",
@@ -12,4 +13,5 @@ __all__ = [
     "media_router",
     "render_router",
     "system_router",
+    "video_gen_router",
 ]
