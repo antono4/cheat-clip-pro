@@ -17,6 +17,14 @@ from backend.schemas.downloads import (
     RawClipDownloadRequest,
     CookiesSaveRequest,
 )
+from backend.schemas.video_gen import (
+    PromptFromVideoRequest,
+    PromptFromVideoResponse,
+    ShotListItem,
+    GenerateVideoRequest,
+    GeneratedVideoFile,
+    VideoGenerationStatusResponse,
+)
 
 __all__ = [
     "ViralClip",
@@ -32,4 +40,10 @@ __all__ = [
     "RawVideoDownloadRequest",
     "RawClipDownloadRequest",
     "CookiesSaveRequest",
+    "PromptFromVideoRequest",
+    "PromptFromVideoResponse",
+    "ShotListItem",
+    "GenerateVideoRequest",
+    "GeneratedVideoFile",
+    "VideoGenerationStatusResponse",
 ]
