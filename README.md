@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/diagrams/hero.png" alt="Cheat Clip PRO — AI-powered auto clipper" width="100%">
+</p>
+
 # 🎬 Cheat Clip PRO
 
 > **AI-powered auto clipper — turn long YouTube videos, Google Drive files, and local uploads into ready-to-post TikToks, Shorts, and Reels with animated subtitles, smart face framing, and batch rendering in minutes.**
@@ -5,6 +9,14 @@
 Cheat Clip PRO analyzes audience retention data and the video transcript with an AI model — Google Gemini or Moonshot AI's Kimi — to find the most engaging moments, then renders them into vertical 1080×1920 clips — complete with animated word-level captions, hook titles, and optional music and watermark.
 
 This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https://github.com/galihjuansaputra/cheat-clip-pro) with a hardened backend, in-browser rendering, Docker deployment, and a test suite.
+
+## 🖼️ Gallery
+
+| Paste a link, pick a duration | Watch the AI pipeline run |
+| :---: | :---: |
+| ![Home screen](docs/screenshots/01-home.jpg) | ![Analysis progress](docs/screenshots/03-progress.jpg) |
+| **Ranked viral clips + heatmap** | **Clip Studio — vertical preview** |
+| ![Results with recommended clips](docs/screenshots/05-recommended-clips.jpg) | ![Clip Studio preview](docs/screenshots/09-preview-vertical.jpg) |
 
 ---
 
@@ -25,6 +37,10 @@ This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https
 - **Hardware acceleration** — Auto-detects NVIDIA NVENC, AMD AMF, Intel QuickSync, and falls back to universal `libx264` CPU encoding.
 - **Two languages** — Full English and Indonesian UI.
 - **Privacy-first cookies** — YouTube cookies stay in browser `localStorage`; they are passed to `yt-dlp` only for the duration of a request.
+
+### How it fits together
+
+![Cheat Clip PRO pipeline](docs/diagrams/pipeline.png)
 
 ---
 
@@ -111,6 +127,8 @@ This starts both servers concurrently:
 ## 🔑 Get an AI API Key (1 Minute)
 
 Cheat Clip PRO supports two AI providers. Paste whichever key you have — the app detects the provider from the key prefix.
+
+![AI provider routing and model fallback](docs/diagrams/ai-providers.png)
 
 **Google Gemini** (free tier available):
 
@@ -235,6 +253,8 @@ Full interactive docs are available at `/docs` (Swagger UI) and `/redoc`.
 
 Cheat Clip PRO auto-detects the best available encoder and lets you override it in Clip Studio:
 
+![Hardware acceleration ladder](docs/diagrams/hardware-acceleration.png)
+
 1. **NVIDIA NVENC** — `h264_nvenc`
 2. **AMD AMF** — `h264_amf` (Radeon GPUs & Ryzen CPUs)
 3. **Intel QuickSync** — `h264_qsv` (Arc & UHD Graphics)
@@ -271,6 +291,12 @@ Backend tests use `pytest`:
 pip install pytest
 pytest tests/
 ```
+
+---
+
+## 🏗️ Architecture
+
+![Cheat Clip PRO architecture](docs/diagrams/architecture.png)
 
 ---
 
