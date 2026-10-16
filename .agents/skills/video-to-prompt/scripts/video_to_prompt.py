@@ -23,6 +23,7 @@ import urllib.request
 
 DEFAULT_BASE_URL = "http://localhost:8000"
 BATCH_POLL_SECONDS = 3.0
+MAX_BATCH_URLS = 20
 
 
 def _post(base_url: str, path: str, payload: dict, timeout: float) -> dict:
@@ -98,11 +99,44 @@ def extract_single(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_batch_urls(path: str) -> list:
+    with open(path, encoding="utf-8") as fh:
+        return [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+
+
+def _dedupe(urls: list) -> tuple:
+    """Keeps the first occurrence of each URL, preserving order."""
+    seen = set()
+    unique = []
+    duplicates = []
+    for url in urls:
+        if url in seen:
+            duplicates.append(url)
+            continue
+        seen.add(url)
+        unique.append(url)
+    return unique, duplicates
+
+
 def extract_batch(args: argparse.Namespace) -> int:
-    with open(args.batch, encoding="utf-8") as fh:
-        urls = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+    urls, duplicates = _dedupe(_load_batch_urls(args.batch))
     if not urls:
         raise SystemExit(f"No URLs found in {args.batch}")
+
+    # The server enforces the same limit; checking here makes a typo in the
+    # input file fail before any quota is spent.
+    if len(urls) > MAX_BATCH_URLS:
+        raise SystemExit(
+            f"{len(urls)} URLs in {args.batch}, but the limit is {MAX_BATCH_URLS} per batch."
+        )
+    if duplicates:
+        print(f"Ignoring {len(duplicates)} duplicate URL(s).", file=sys.stderr)
+
+    if args.dry_run:
+        print(f"Would submit {len(urls)} video(s) to {args.base_url}:")
+        for url in urls:
+            print(f"  {url}")
+        return 0
 
     payload = {"urls": urls, **_common_fields(args)}
     started = _post(args.base_url, "/api/generate-prompts-batch", payload, args.timeout)
@@ -127,6 +161,13 @@ def extract_batch(args: argparse.Namespace) -> int:
                         print(f"error: {item['error']}")
                     elif item.get("prompt"):
                         print(item["prompt"])
+                done = status.get("completed", 0)
+                failed = status.get("failed", 0)
+                print(
+                    f"\nSummary: {done} completed, {failed} failed, "
+                    f"{status.get('total', 0)} total.",
+                    file=sys.stderr,
+                )
             return 1 if status.get("status") == "error" else 0
         time.sleep(BATCH_POLL_SECONDS)
     raise SystemExit("Timed out waiting for the batch to finish.")
@@ -148,6 +189,7 @@ def main() -> int:
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, help=f"Backend base URL (default {DEFAULT_BASE_URL})")
     parser.add_argument("--timeout", type=float, default=600.0, help="Per-request timeout in seconds")
     parser.add_argument("--wait", action="store_true", help="For --batch, poll until every item finishes")
+    parser.add_argument("--dry-run", action="store_true", help="For --batch, list what would be submitted and exit")
     parser.add_argument("--json", action="store_true", help="Print the raw JSON response")
 
     args = parser.parse_args()

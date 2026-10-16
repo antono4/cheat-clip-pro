@@ -16,7 +16,7 @@ export function normalizeCookies(rawContent: string): string {
   const text = rawContent
     .replace(/\ufeff/g, '')
     .replace(/\ufffe/g, '')
-    .replace(/\x00/g, '')
+    .replaceAll(String.fromCharCode(0), '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .trim();

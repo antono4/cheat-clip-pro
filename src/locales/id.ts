@@ -724,6 +724,7 @@ export const id: Translations = {
     extractFailed: "Gagal membuat prompt dari video ini.",
     batchFailed: "Gagal memulai batch.",
     batchProgress: "{done} dari {total} selesai · {failed} gagal",
+    batchSkippedDuplicates: "Mengabaikan {count} URL duplikat.",
     promptLabel: "Prompt yang dihasilkan",
     summaryLabel: "Ringkasan",
     cameraLabel: "Kamera",

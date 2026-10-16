@@ -9,6 +9,7 @@ import {
   getCookieDomainSamples,
   normalizeCookies,
 } from '../utils/cookieUtils';
+import { toErrorMessage } from '../utils/api';
 
 interface CookiesModalProps {
   isOpen: boolean;
@@ -46,11 +47,26 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
     }
   };
 
+  // localStorage is an external store, so read it during render and let the
+  // open/close transition drive only the transient banner.
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) setMessage(null);
+  }
+
   useEffect(() => {
-    if (isOpen) {
-      loadStatus();
-      setMessage(null);
-    }
+    if (!isOpen) return;
+    let cancelled = false;
+    // Defer to a microtask so the storage read does not set state synchronously.
+    void (async () => {
+      await Promise.resolve();
+      if (!cancelled) loadStatus();
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -79,8 +95,8 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
           text: t.cookies.fileLoadedInfo(file.name, (content.length / 1024).toFixed(1)),
           type: 'info'
         });
-      } catch (err: any) {
-        setMessage({ text: `Failed to read file: ${err.message}`, type: 'error' });
+      } catch (err: unknown) {
+        setMessage({ text: `Failed to read file: ${toErrorMessage(err, '')}`, type: 'error' });
       }
     };
     reader.readAsArrayBuffer(file);
@@ -110,8 +126,8 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
       setStoredCookies(normalized);
       loadStatus();
       setMessage({ text: t.cookies.saveSuccess, type: 'success' });
-    } catch (err: any) {
-      setMessage({ text: err.message || t.cookies.saveFailed, type: 'error' });
+    } catch (err: unknown) {
+      setMessage({ text: toErrorMessage(err, t.cookies.saveFailed), type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -124,8 +140,8 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
       removeStoredCookies();
       loadStatus();
       setMessage({ text: t.cookies.deletedSuccess, type: 'info' });
-    } catch (err: any) {
-      setMessage({ text: err.message || t.cookies.removeFailed, type: 'error' });
+    } catch (err: unknown) {
+      setMessage({ text: toErrorMessage(err, t.cookies.removeFailed), type: 'error' });
     } finally {
       setIsLoading(false);
       setShowDeleteConfirm(false);

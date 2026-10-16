@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useLanguage } from '../locales';
+import { useLanguage, type Translations } from '../locales';
 import { resilientFetch } from '../utils/api';
+import {
+  DEFAULT_STUDIO_PREFS,
+  STUDIO_PREFS_KEY,
+  getSavedStudioPreferences,
+  type StudioPreferences,
+} from './clipStudioPreferences';
 import type {
   ViralClip,
   RenderSettings,
@@ -67,7 +73,7 @@ function getFriendlyErrorMessage(rawMsg: string): string {
   return rawMsg.length > 140 ? rawMsg.slice(0, 140) + '...' : rawMsg;
 }
 
-const ClipRenderErrorBox: React.FC<{ errorMessage: string; t: any; onRetry?: () => void }> = ({ errorMessage, t, onRetry }) => {
+const ClipRenderErrorBox: React.FC<{ errorMessage: string; t: Translations; onRetry?: () => void }> = ({ errorMessage, t, onRetry }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -172,85 +178,6 @@ const ClipRenderErrorBox: React.FC<{ errorMessage: string; t: any; onRetry?: () 
     </div>
   );
 };
-
-export const STUDIO_PREFS_KEY = 'cheat_clip_studio_preferences';
-
-export interface StudioPreferences {
-  aspectRatio?: AspectRatioOption;
-  backgroundStyle?: BackgroundStyle;
-  enableFaceTracking?: boolean;
-  streamerPreset?: StreamerPreset;
-  facecamPosition?: FacecamPosition;
-  titlePosition?: TitlePosition;
-  captionStyle?: CaptionStyle;
-  captionFont?: CaptionFont;
-  titleFont?: CaptionFont;
-  fontSize?: FontSizeOption;
-  fontSizePx?: number;
-  titleFontSize?: FontSizeOption;
-  titleFontSizePx?: number;
-  textCase?: TextCaseOption;
-  titleTextCase?: TextCaseOption;
-  subtitlePositionMode?: SubtitlePositionMode;
-  titleDuration?: TitleDurationOption;
-  originalAudioVolume?: number;
-  hardwareAccel?: HardwareAccelOption;
-  titleYPercent?: number;
-  subtitleYPercent?: number;
-  subtitleCenterYPercent?: number;
-  isCustomTitleY?: boolean;
-  bgmVolume?: number;
-  hookSfxVolume?: number;
-  renderMode?: 'separate' | 'merged';
-  fileNamePrefix?: string;
-  fileNameSuffix?: string;
-  titlePrefix?: string;
-  titleSuffix?: string;
-}
-
-export const DEFAULT_STUDIO_PREFS: Required<StudioPreferences> = {
-  aspectRatio: '9:16',
-  backgroundStyle: 'black',
-  enableFaceTracking: true,
-  streamerPreset: 'none',
-  facecamPosition: 'auto',
-  titlePosition: 'auto',
-  captionStyle: 'viral_pop',
-  captionFont: 'Outfit',
-  titleFont: 'Outfit',
-  fontSize: 'medium',
-  fontSizePx: 75,
-  titleFontSize: 'medium',
-  titleFontSizePx: 75,
-  textCase: 'uppercase',
-  titleTextCase: 'uppercase',
-  subtitlePositionMode: 'bottom',
-  titleDuration: 'entire',
-  originalAudioVolume: 100,
-  hardwareAccel: 'auto',
-  titleYPercent: 17,
-  subtitleYPercent: 21,
-  subtitleCenterYPercent: 50,
-  isCustomTitleY: false,
-  bgmVolume: 25,
-  hookSfxVolume: 100,
-  renderMode: 'separate',
-  fileNamePrefix: '',
-  fileNameSuffix: '',
-  titlePrefix: '',
-  titleSuffix: '',
-};
-
-function getSavedStudioPreferences(): Partial<StudioPreferences> {
-  try {
-    const raw = localStorage.getItem(STUDIO_PREFS_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) as Partial<StudioPreferences>;
-  } catch (e) {
-    console.warn('Failed to parse studio preferences from localStorage:', e);
-    return {};
-  }
-}
 
 export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
   videoUrl,
@@ -468,27 +395,47 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
     found: false,
   });
 
-  const previewPlayerRef = useRef<any>(null);
+  const previewPlayerRef = useRef<YT.Player | null>(null);
   const directVideoRef = useRef<HTMLVideoElement | null>(null);
   const ambientVideoRef = useRef<HTMLVideoElement | null>(null);
   const trackingTimerRef = useRef<number | null>(null);
 
-  // Keep selectedClips in sync if markedClips updates from outside (including 0 clips)
-  useEffect(() => {
+  // selectedClips mirrors markedClips so batch actions can add/remove locally.
+  // Re-synced during render, which is the "derive from props" React pattern.
+  const [prevMarkedClips, setPrevMarkedClips] = useState(markedClips);
+  if (markedClips !== prevMarkedClips) {
+    setPrevMarkedClips(markedClips);
     setSelectedClips(markedClips);
-  }, [markedClips]);
+  }
 
-  // Sync active clip from external selection into preview
-  useEffect(() => {
+  // Sync active clip from external selection into preview.
+  const [prevActiveClip, setPrevActiveClip] = useState(activeClip);
+  if (activeClip !== prevActiveClip) {
+    setPrevActiveClip(activeClip);
     if (activeClip) {
       const idx = allClips.findIndex(
         c => c.start_time === activeClip.start_time && c.end_time === activeClip.end_time
       );
-      if (idx !== -1) {
-        setPreviewClipIndex(idx);
-      }
+      if (idx !== -1) setPreviewClipIndex(idx);
     }
-  }, [activeClip, allClips]);
+  }
+
+  // Seek the preview whenever the selected clip changes. The playhead state
+  // write is deferred a microtask so nothing sets state synchronously here.
+  useEffect(() => {
+    const target = allClips[previewClipIndex];
+    if (!target) return;
+    const startAt = target.start_time;
+    void Promise.resolve().then(() => setCurrentTime(startAt));
+    if (previewPlayerRef.current && typeof previewPlayerRef.current.seekTo === 'function') {
+      try {
+        previewPlayerRef.current.seekTo(startAt, true);
+      } catch { /* ignore */ }
+    } else if (directVideoRef.current) {
+      directVideoRef.current.currentTime = startAt;
+      if (ambientVideoRef.current) ambientVideoRef.current.currentTime = startAt;
+    }
+  }, [previewClipIndex, allClips]);
 
   const currentPreviewClip = allClips[previewClipIndex] || allClips[0] || null;
   const clipStart = currentPreviewClip ? currentPreviewClip.start_time : 0;
@@ -560,8 +507,13 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
 
     const isDirect = Boolean(videoUrl && (videoUrl.endsWith('.mp4') || videoUrl.endsWith('.webm') || videoUrl.endsWith('.mov') || videoUrl.endsWith('.mkv') || videoUrl.includes('/api/video') || videoUrl.startsWith('blob:') || videoId?.startsWith('upload_') || videoId?.startsWith('gdrive_')));
     if (isDirect) {
-      setPlayerReady(true);
-      setCurrentTime(clipStart);
+      // The <video> element renders at time zero; jumping it is a DOM write that
+      // must not happen during render, so defer both state updates.
+      void Promise.resolve().then(() => {
+        setPlayerReady(true);
+        setCurrentTime(clipStart);
+        if (directVideoRef.current) directVideoRef.current.currentTime = clipStart;
+      });
       return;
     }
 
@@ -572,7 +524,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
       if (previewPlayerRef.current) {
         try {
           previewPlayerRef.current.destroy();
-        } catch (e) {}
+        } catch { /* ignore */ }
         previewPlayerRef.current = null;
       }
 
@@ -598,7 +550,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
             origin: window.location.origin,
           },
           events: {
-            onReady: (event: any) => {
+            onReady: (event: YT.PlayerEvent) => {
               setPlayerReady(true);
               try {
                 event.target.mute();
@@ -609,9 +561,9 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                 }
                 event.target.seekTo(clipStart, true);
                 setCurrentTime(clipStart);
-              } catch (e) {}
+              } catch { /* ignore */ }
             },
-            onStateChange: (event: any) => {
+            onStateChange: (event: YT.OnStateChangeEvent) => {
               if (event.data === 1) {
                 // PLAYING
                 setIsPlaying(true);
@@ -620,10 +572,11 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                 setIsPlaying(false);
                 stopTracking();
                 if (event.data === 0 && isLooping && currentPreviewClip) {
+                  const player = previewPlayerRef.current;
                   try {
-                    previewPlayerRef.current.seekTo(clipStart, true);
-                    previewPlayerRef.current.playVideo();
-                  } catch (e) {}
+                    player?.seekTo(clipStart, true);
+                    player?.playVideo();
+                  } catch { /* ignore */ }
                 }
               }
             },
@@ -680,7 +633,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
             }
           }
         }
-      } catch (e) {}
+      } catch { /* ignore */ }
     }, 150);
   };
 
@@ -698,24 +651,16 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
       if (previewPlayerRef.current) {
         try {
           previewPlayerRef.current.destroy();
-        } catch (e) {}
+        } catch { /* ignore */ }
         previewPlayerRef.current = null;
       }
     };
   }, [videoId, previewClipIndex]);
 
-  // When previewClipIndex changes, seek player to new clip start
-  useEffect(() => {
-    setCurrentTime(clipStart);
-    if (previewPlayerRef.current && typeof previewPlayerRef.current.seekTo === 'function') {
-      try {
-        previewPlayerRef.current.seekTo(clipStart, true);
-      } catch (e) {}
-    } else if (directVideoRef.current) {
-      directVideoRef.current.currentTime = clipStart;
-      if (ambientVideoRef.current) ambientVideoRef.current.currentTime = clipStart;
-    }
-  }, [previewClipIndex, clipStart]);
+  // Picking another clip is a plain state change; the effect above seeks.
+  const handlePreviewClipChange = (index: number) => {
+    setPreviewClipIndex(index);
+  };
 
   const togglePlayPause = () => {
     if (previewPlayerRef.current) {
@@ -728,7 +673,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
           }
           previewPlayerRef.current.playVideo();
         }
-      } catch (e) {}
+      } catch { /* ignore */ }
     } else if (directVideoRef.current) {
       if (isPlaying) {
         directVideoRef.current.pause();
@@ -752,7 +697,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
     if (previewPlayerRef.current && typeof previewPlayerRef.current.seekTo === 'function') {
       try {
         previewPlayerRef.current.seekTo(newTime, true);
-      } catch (e) {}
+      } catch { /* ignore */ }
     } else if (directVideoRef.current) {
       directVideoRef.current.currentTime = newTime;
       if (ambientVideoRef.current) ambientVideoRef.current.currentTime = newTime;
@@ -765,7 +710,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
       try {
         previewPlayerRef.current.seekTo(clipStart, true);
         previewPlayerRef.current.playVideo();
-      } catch (e) {}
+      } catch { /* ignore */ }
     } else if (directVideoRef.current) {
       directVideoRef.current.currentTime = clipStart;
       directVideoRef.current.play();
@@ -784,7 +729,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
           previewPlayerRef.current.mute();
           setIsMuted(true);
         }
-      } catch (e) {}
+      } catch { /* ignore */ }
     } else if (directVideoRef.current) {
       directVideoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
@@ -1351,13 +1296,16 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
   const safeSubtitleY = Math.min(subtitleYPercent, maxSubY);
   const safeSubCenterY = Math.max(minCenterY, Math.min(subtitleCenterYPercent, maxCenterY));
 
-  // If user hasn't explicitly customized positions, auto-keep optimal default for ratio & lines
-  useEffect(() => {
+  // If the user has not customized positions, keep the optimal default for the
+  // current ratio and line count. Recomputed during render on purpose.
+  const [prevLayoutKey, setPrevLayoutKey] = useState('');
+  const layoutKey = `${aspectRatio}|${titleLineCount}|${streamerPreset}|${isCustomTitleY}`;
+  if (layoutKey !== prevLayoutKey) {
+    setPrevLayoutKey(layoutKey);
     if (!isCustomTitleY) {
-      const defaults = getDefaultPositions(aspectRatio, titleLineCount, streamerPreset);
-      setTitleYPercent(defaults.titleY);
+      setTitleYPercent(getDefaultPositions(aspectRatio, titleLineCount, streamerPreset).titleY);
     }
-  }, [aspectRatio, titleLineCount, streamerPreset, isCustomTitleY]);
+  }
 
   const handleSelectAspectRatio = (newRatio: AspectRatioOption) => {
     setAspectRatio(newRatio);
@@ -1625,7 +1573,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
               <select
                 className="preview-clip-select"
                 value={previewClipIndex}
-                onChange={e => setPreviewClipIndex(Number(e.target.value))}
+                onChange={e => handlePreviewClipChange(Number(e.target.value))}
               >
                 {allClips.map((clip, idx) => {
                   const clipKey = `${clip.start_time}_${clip.end_time}`;
@@ -3926,7 +3874,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                           style={{
                             opacity: playerReady ? 1 : 0,
                             transition: 'opacity 0.25s ease',
-                            ['--preview-crop-pct' as any]: previewCropPercent,
+                            [`--preview-crop-pct` as string]: String(previewCropPercent),
                           }}
                         >
                           <div id="studio-yt-iframe-slot"></div>

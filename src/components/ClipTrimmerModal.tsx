@@ -109,7 +109,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
   };
 
   const timelineBarRef = useRef<HTMLDivElement | null>(null);
-  const ytPlayerRef = useRef<any>(null);
+  const ytPlayerRef = useRef<YT.Player | null>(null);
   const timePollRef = useRef<number | null>(null);
   const playerReadyRef = useRef<boolean>(false);
   const isDraggingRef = useRef<boolean>(false);
@@ -123,8 +123,11 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
     clipDur: number;
   } | null>(null);
 
-  // Initialize or reset when clip changes
-  useEffect(() => {
+  // Opening a different clip resets the trim window. Derived during render so
+  // the new clip paints in one pass instead of an extra effect render.
+  const [prevClip, setPrevClip] = useState(clip);
+  if (clip !== prevClip) {
+    setPrevClip(clip);
     if (clip) {
       setAdjustedStart(clip.start_time);
       setAdjustedEnd(clip.end_time);
@@ -134,29 +137,29 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
       setCurrentTime(clip.start_time);
       setIsDownloading(false);
       setDownloadSuccess(false);
-      if (isDirectVideo && directVideoRef.current) {
-        directVideoRef.current.currentTime = clip.start_time;
-      }
+    }
+  }
+
+  // The DOM video element needs the same reset, but refs cannot be written
+  // during render.
+  useEffect(() => {
+    if (clip && isDirectVideo && directVideoRef.current) {
+      directVideoRef.current.currentTime = clip.start_time;
     }
   }, [clip, isDirectVideo]);
 
-  // Keep manual text inputs synced with numeric state
-  useEffect(() => {
+  // The manual text inputs mirror the numeric bounds whenever those change.
+  const [prevBounds, setPrevBounds] = useState({ start: adjustedStart, end: adjustedEnd });
+  if (prevBounds.start !== adjustedStart || prevBounds.end !== adjustedEnd) {
+    setPrevBounds({ start: adjustedStart, end: adjustedEnd });
     setStartInputVal(formatSeconds(adjustedStart));
-  }, [adjustedStart]);
-
-  useEffect(() => {
     setEndInputVal(formatSeconds(adjustedEnd));
-  }, [adjustedEnd]);
+    setDownloadSuccess(false);
+  }
 
   // Keep bounds ref synced for interval checks without re-creating interval
   useEffect(() => {
     boundsRef.current = { start: adjustedStart, end: adjustedEnd };
-  }, [adjustedStart, adjustedEnd]);
-
-  // Reset download success banner when timestamps change
-  useEffect(() => {
-    setDownloadSuccess(false);
   }, [adjustedStart, adjustedEnd]);
 
   // Setup YouTube Iframe API player for the modal preview (only for YouTube videos)
@@ -170,7 +173,10 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
     let attempts = 0;
 
     playerReadyRef.current = false;
-    setPlayerReady(false);
+    // Asynchronous: the player reports readiness from its own callback.
+    void Promise.resolve().then(() => {
+      if (isMounted) setPlayerReady(false);
+    });
 
     // Ensure YouTube IFrame API is present
     if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
@@ -214,7 +220,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
         if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
           try {
             ytPlayerRef.current.destroy();
-          } catch {}
+          } catch { /* ignore */ }
           ytPlayerRef.current = null;
         }
 
@@ -233,7 +239,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
             origin: window.location.origin,
           },
           events: {
-            onReady: (e: any) => {
+            onReady: (e: YT.PlayerEvent) => {
               if (!isMounted) return;
               if (fallbackTimer) {
                 clearTimeout(fallbackTimer);
@@ -243,14 +249,14 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
               setPlayerReady(true);
               try {
                 e.target.seekTo(adjustedStart, true);
-              } catch {}
+              } catch { /* ignore */ }
             },
-            onStateChange: (e: any) => {
+            onStateChange: (e: YT.OnStateChangeEvent) => {
               if (!isMounted) return;
               setIsPlaying(e.data === 1);
             },
-            onError: (err: any) => {
-              console.warn('YouTube Player transient error in trimmer:', err);
+            onError: (err: YT.OnErrorEvent) => {
+              console.warn('YouTube Player transient error in trimmer:', err.data);
             }
           }
         });
@@ -283,7 +289,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
       if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
         try {
           ytPlayerRef.current.destroy();
-        } catch {}
+        } catch { /* ignore */ }
         ytPlayerRef.current = null;
       }
     };
@@ -305,7 +311,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
             ytPlayerRef.current.pauseVideo();
             setIsPlaying(false);
           }
-        } catch {}
+        } catch { /* ignore */ }
       }
     }, 250);
 
@@ -329,7 +335,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
       } else if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
         try {
           ytPlayerRef.current.seekTo(targetSec, false);
-        } catch {}
+        } catch { /* ignore */ }
       }
     }, 100);
   }, [isDirectVideo]);
@@ -361,7 +367,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
           ytPlayerRef.current.playVideo();
           setIsPlaying(true);
         }
-      } catch {}
+      } catch { /* ignore */ }
     }
   }, [minTimelineStart, maxTimelineEnd, isDirectVideo, isMuted, volume]);
 
@@ -407,7 +413,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
             setIsPlaying(true);
           }
         }
-      } catch {}
+      } catch { /* ignore */ }
     }
   }, [isDirectVideo, isPlaying, adjustedStart, adjustedEnd, currentTime, isMuted, volume, seekToTime]);
 
@@ -517,7 +523,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
         if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
           try {
             ytPlayerRef.current.seekTo(finalSeek, true);
-          } catch {}
+          } catch { /* ignore */ }
         }
       }
 

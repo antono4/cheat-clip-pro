@@ -24,6 +24,21 @@ export interface ViralClip {
   hashtag_suggestion?: string;
 }
 
+/** Union-safe payload pushed over the analysis SSE stream. */
+export interface AnalyzeStreamEvent {
+  error?: string;
+  done?: boolean;
+  result?: AnalyzeResponse;
+  step?: number | string;
+  step_progress?: number | string;
+  overall_progress?: number | string;
+  stage?: string;
+  detail?: string;
+  model?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
 export interface AnalyzeResponse {
   video_id: string;
   title: string;
@@ -66,6 +81,9 @@ export type FacecamPosition = 'auto' | 'bottom_right' | 'top_right' | 'bottom_le
 export type FontSizeOption = 'small' | 'medium' | 'big' | 'custom';
 export type TextCaseOption = 'uppercase' | 'capitalize' | 'lowercase';
 export type HardwareAccelOption = 'auto' | 'nvenc' | 'amf' | 'qsv' | 'cpu' | 'browser_wasm';
+
+export type ViralityFilter = 'all' | 'high' | 'medium' | 'marked';
+export type ClipSortOption = 'virality' | 'time' | 'duration' | 'marked';
 
 export interface FontItem {
   name: string;

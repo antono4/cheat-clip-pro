@@ -51,6 +51,7 @@ from backend.services.prompt_batch_service import (
     apply_prompt_error,
     apply_prompt_result,
     create_prompt_batch,
+    normalise_batch_urls,
     summarise_prompt_batch,
 )
 from backend.services.video_gen_service import (
@@ -319,9 +320,10 @@ async def generate_prompts_batch(
     background_tasks: BackgroundTasks,
 ):
     """Starts a background batch that extracts one prompt per source video."""
-    urls = [u.strip() for u in (request.urls or []) if (u or "").strip()]
-    if not urls:
-        raise HTTPException(status_code=400, detail="At least one video URL is required.")
+    try:
+        urls, skipped = normalise_batch_urls(request.urls or [])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     model = (request.model or "").strip()
     api_key = _resolve_request_key(request.api_key or "", model)
@@ -337,10 +339,10 @@ async def generate_prompts_batch(
         )
 
     batch_id = f"promptbatch_{int(time.time())}_{uuid.uuid4().hex[:6]}"
-    PROMPT_BATCHES[batch_id] = create_prompt_batch(batch_id, urls)
+    PROMPT_BATCHES[batch_id] = create_prompt_batch(batch_id, urls, skipped)
 
     background_tasks.add_task(_run_prompt_batch, batch_id, api_key, model, request)
-    return {"batch_id": batch_id, "total": len(urls)}
+    return {"batch_id": batch_id, "total": len(urls), "skipped": skipped}
 
 
 @router.get("/api/generate-prompts-batch-status/{batch_id}", response_model=PromptBatchStatusResponse)

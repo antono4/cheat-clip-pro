@@ -20,7 +20,12 @@ class PromptFromVideoRequest(BaseModel):
 class PromptFromVideoBatchRequest(BaseModel):
     """Extract prompts from several source videos in one background batch."""
 
-    urls: List[str] = Field(..., description="Source videos; each entry follows the `url` rules")
+    urls: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=20,
+        description="Source videos; each entry follows the `url` rules (max 20 per batch)",
+    )
     api_key: Optional[str] = Field(None, description="Gemini or Moonshot/Kimi API key")
     model: Optional[str] = Field("", description="Preferred AI model for prompt extraction")
     style_hint: Optional[str] = Field(None, description="Visual style applied to every item")
@@ -62,6 +67,7 @@ class PromptBatchStatusResponse(BaseModel):
     total: int = 0
     completed: int = 0
     failed: int = 0
+    skipped: List[str] = Field(default_factory=list, description="Duplicate URLs dropped on submit")
     items: List[PromptBatchItem] = Field(default_factory=list)
 
 

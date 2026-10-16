@@ -402,6 +402,82 @@ def test_summarise_prompt_batch_stays_running_while_items_pend():
     assert batch["failed"] == 1
 
 
+# ── Batch input validation ──────────────────────────────────────────────────
+
+def test_normalise_batch_urls_drops_duplicates_and_keeps_order():
+    from backend.services.prompt_batch_service import normalise_batch_urls
+
+    urls, skipped = normalise_batch_urls([
+        "https://youtu.be/a", "  https://youtu.be/b  ", "https://youtu.be/a",
+    ])
+    assert urls == ["https://youtu.be/a", "https://youtu.be/b"]
+    assert skipped == ["https://youtu.be/a"]
+
+
+def test_normalise_batch_urls_rejects_non_http_entries():
+    from backend.services.prompt_batch_service import normalise_batch_urls
+
+    with pytest.raises(ValueError, match="Not a valid video URL"):
+        normalise_batch_urls(["ftp://example.com/video.mp4"])
+
+
+def test_normalise_batch_urls_enforces_the_cap():
+    from backend.services.prompt_batch_service import MAX_BATCH_URLS, normalise_batch_urls
+
+    over = [f"https://youtu.be/{i}" for i in range(MAX_BATCH_URLS + 1)]
+    with pytest.raises(ValueError, match="Too many videos"):
+        normalise_batch_urls(over)
+
+
+def test_normalise_batch_urls_accepts_exactly_the_cap():
+    from backend.services.prompt_batch_service import MAX_BATCH_URLS, normalise_batch_urls
+
+    at_cap = [f"https://youtu.be/{i}" for i in range(MAX_BATCH_URLS)]
+    urls, skipped = normalise_batch_urls(at_cap)
+    assert len(urls) == MAX_BATCH_URLS
+    assert skipped == []
+
+
+def test_generate_prompts_batch_endpoint_rejects_invalid_url():
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+    resp = _post_batch(client, ["file:///etc/passwd"])
+    assert resp.status_code == 400
+    assert "Not a valid video URL" in resp.json()["detail"]
+
+
+def test_generate_prompts_batch_endpoint_rejects_too_many_urls():
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+    resp = _post_batch(client, [f"https://youtu.be/{i}" for i in range(25)])
+    # Capped by the pydantic field before the handler ever runs.
+    assert resp.status_code == 422
+
+
+def test_generate_prompts_batch_start_reports_skipped_duplicates(fake_prompt_provider, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    _patch_youtube(monkeypatch, {"dup": []})
+    client = TestClient(app)
+    resp = _post_batch(client, ["https://youtu.be/dup", "https://youtu.be/dup"])
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["skipped"] == ["https://youtu.be/dup"]
+
+    status = client.get(f"/api/generate-prompts-batch-status/{data['batch_id']}").json()
+    assert status["total"] == 1
+    assert status["skipped"] == ["https://youtu.be/dup"]
+
+
 # ── Video generation job lifecycle ──────────────────────────────────────────
 
 class _FakeVideo:

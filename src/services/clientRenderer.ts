@@ -10,7 +10,7 @@ export interface ClientRenderOptions {
   startTime?: number;
   endTime?: number;
   aspectRatio: '9:16' | '1:1' | '16:9' | '4:5';
-  backgroundStyle: 'blur' | 'black' | 'fit' | 'crop';
+  backgroundStyle: 'blur' | 'black';
   titleText?: string;
   titlePosition?: 'top' | 'center' | 'bottom';
   subtitles?: Array<{ start: number; end: number; text: string }>;
@@ -80,7 +80,7 @@ export async function renderClipClientSide(options: ClientRenderOptions): Promis
     startTime = 0,
     endTime,
     aspectRatio = '9:16',
-    backgroundStyle = 'blur',
+    backgroundStyle = 'black',
     onProgress
   } = options;
 
@@ -159,7 +159,11 @@ export async function renderClipClientSide(options: ClientRenderOptions): Promis
 
   if (onProgress) onProgress(99, 'Extracting rendered MP4 file...');
   const outputData = await ffmpeg.readFile(outputName);
-  const blob = new Blob([outputData as any], { type: 'video/mp4' });
+  // readFile is typed string|Uint8Array; an encoded MP4 is always binary.
+  if (typeof outputData === 'string') {
+    throw new Error('Encoded video came back as text instead of binary data.');
+  }
+  const blob = new Blob([new Uint8Array(outputData)], { type: 'video/mp4' });
 
   // Cleanup virtual files to free WASM memory
   try {

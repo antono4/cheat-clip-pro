@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../locales';
+import { toErrorMessage } from '../utils/api';
 
 export interface VersionInfo {
   current_commit: string;
@@ -69,27 +70,43 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
       } else {
         setErrorMessage(t.updateModal.errorTitle);
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Network error while checking updates');
+    } catch (err: unknown) {
+      setErrorMessage(toErrorMessage(err, 'Network error while checking updates'));
     } finally {
       setIsChecking(false);
     }
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchVersion();
-      handleCheckUpdate();
-    } else {
+  // Reset transient state the moment the modal is dismissed, without a
+  // cascading effect render.
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (!isOpen) {
       setErrorMessage(null);
       setIsUpdating(false);
       setIsRestarting(false);
       setReconnectAttempt(0);
+    }
+  }
+
+  // Version + update lookups are only kicked off on open, and they settle
+  // asynchronously, so no state is written synchronously here.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      await fetchVersion();
+      if (!cancelled) await handleCheckUpdate();
+    })();
+    return () => {
+      cancelled = true;
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
       }
-    }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const startPollingReconnect = () => {
@@ -99,7 +116,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
 
     // Wait 3.5 seconds before starting polling so the old processes have time to shut down
     setTimeout(() => {
-      pollTimerRef.current = setInterval(async () => {
+      pollTimerRef.current = window.setInterval(async () => {
         attempts += 1;
         setReconnectAttempt(attempts);
         try {
@@ -146,9 +163,9 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
       }
       setIsUpdating(false);
       startPollingReconnect();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsUpdating(false);
-      setErrorMessage(err.message || 'Error executing update');
+      setErrorMessage(toErrorMessage(err, 'Error executing update'));
     }
   };
 
