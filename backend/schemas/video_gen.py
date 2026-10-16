@@ -17,9 +17,52 @@ class PromptFromVideoRequest(BaseModel):
     subtitles_filename: Optional[str] = Field(None, description="Optional manual subtitles filename")
 
 
+class PromptFromVideoBatchRequest(BaseModel):
+    """Extract prompts from several source videos in one background batch."""
+
+    urls: List[str] = Field(..., description="Source videos; each entry follows the `url` rules")
+    api_key: Optional[str] = Field(None, description="Gemini or Moonshot/Kimi API key")
+    model: Optional[str] = Field("", description="Preferred AI model for prompt extraction")
+    style_hint: Optional[str] = Field(None, description="Visual style applied to every item")
+    extra_instructions: Optional[str] = Field(None, description="Extra direction applied to every item")
+    proxy: Optional[str] = Field(None, description="Optional custom proxy URL")
+    cookies: Optional[str] = Field(None, description="Optional YouTube cookies from browser LocalStorage")
+    subtitles: Optional[str] = Field(None, description="Optional manual subtitles (SRT or TXT)")
+    subtitles_filename: Optional[str] = Field(None, description="Optional manual subtitles filename")
+
+
 class ShotListItem(BaseModel):
     time: str = Field("", description="Time range, e.g. '0-5s'")
     description: str = Field("", description="What the camera shows in this shot")
+
+
+class PromptBatchItem(BaseModel):
+    """Per-video state inside a prompt extraction batch."""
+
+    url: str
+    status: str = Field("pending", description="'pending', 'processing', 'completed' or 'error'")
+    video_id: Optional[str] = None
+    title: Optional[str] = None
+    model: Optional[str] = None
+    prompt: Optional[str] = None
+    summary: Optional[str] = None
+    style: Optional[str] = None
+    camera: Optional[str] = None
+    lighting: Optional[str] = None
+    audio: Optional[str] = None
+    setting: Optional[str] = None
+    negative_prompt: Optional[str] = None
+    shot_list: List[ShotListItem] = Field(default_factory=list)
+    error: Optional[str] = None
+
+
+class PromptBatchStatusResponse(BaseModel):
+    batch_id: str
+    status: str = Field("running", description="'running', 'completed' or 'error'")
+    total: int = 0
+    completed: int = 0
+    failed: int = 0
+    items: List[PromptBatchItem] = Field(default_factory=list)
 
 
 class PromptFromVideoResponse(BaseModel):
