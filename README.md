@@ -33,6 +33,7 @@ This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https
 - **Hook title banners** — Per-clip AI-generated titles with optional prefix/suffix, duration control, and live preview.
 - **Branding & audio** — Watermark logos, background music, and sound effects.
 - **Batch rendering** — Render many clips at once and download them together as a single `.ZIP`.
+- **Batch prompt extraction** — Feed up to 20 videos at once and get one reusable text-to-video prompt per video; duplicates are dropped and a bad URL fails before any quota is spent.
 - **Client-side rendering (WASM)** — Optional FFmpeg WebAssembly renderer runs entirely in the browser for zero server CPU load.
 - **Hardware acceleration** — Auto-detects NVIDIA NVENC, AMD AMF, Intel QuickSync, and falls back to universal `libx264` CPU encoding.
 - **Two languages** — Full English and Indonesian UI.
@@ -177,7 +178,7 @@ python3 .agents/skills/video-to-prompt/scripts/video_to_prompt.py \
   --style "cinematic realism"
 ```
 
-Pass `--batch urls.txt --wait` to extract prompts for several videos, or `--json` for the raw response.
+Pass `--batch urls.txt --wait` to extract prompts for several videos (up to 20 per batch, duplicates are dropped and an invalid URL fails fast), add `--dry-run` to preview what would be submitted, or `--json` for the raw response.
 
 ### Clip Studio reference
 
@@ -222,6 +223,7 @@ Copy `backend/.env.template` to `backend/.env` (or create a root `.env`) and set
 | `SUPADATA_API_KEYS` | Comma-separated Supadata keys for cloud transcript fallback (round-robin). |
 | `WEBSHARE_PROXY` / `WEBSHARE_USERNAME` / `WEBSHARE_PASSWORD` | Rotating proxy to avoid YouTube datacenter IP bans. |
 | `PROXY_URL` | Generic proxy URL for downloads. |
+| `REQUESTS_CA_BUNDLE` | Custom CA bundle for environments behind an SSL-inspecting proxy. |
 | `JOB_TTL_SECONDS` / `JOB_MAX_ENTRIES` | Tuning for the in-memory job registry. |
 | `TEMP_MAX_AGE_SECONDS` / `TEMP_STORAGE_QUOTA_GB` / `CLEANUP_INTERVAL_SECONDS` | Temp-file cleanup worker (TTL, quota ceiling, interval). |
 | `EMOJI_FONT_PATH` | Path to a color emoji font for overlay rendering. |
@@ -303,8 +305,22 @@ Yes — AMD (`h264_amf`), Intel (`h264_qsv`), and Apple/CPU (`libx264`) are all 
 Backend tests use `pytest`:
 
 ```bash
-pip install pytest
+pip install -r requirements-test.txt   # light subset: no torch/cv2/whisper
 pytest tests/
+```
+
+Frontend unit tests use `vitest`:
+
+```bash
+npm run test
+```
+
+Type checking and a production build are also part of CI:
+
+```bash
+npx tsc -b
+npm run lint
+npm run build
 ```
 
 ---
@@ -331,9 +347,13 @@ cheat-clip-pro/
 │   ├── components/          # Clip studio, trimmer, heatmap, modals
 │   ├── services/            # client-side (WASM) renderer
 │   ├── utils/               # API client, audio extraction, cookie utils
+│   ├── types/               # Hand-written YouTube IFrame API types
 │   └── locales/             # English & Indonesian translations
 ├── scripts/                 # Dev backend launcher
 ├── tests/                   # pytest suite
+├── requirements-test.txt    # Light deps for CI (no torch/whisper)
+├── .github/workflows/       # CI: backend tests, frontend tsc/test/build, lint
+├── AGENTS.md                # Repo notes for agents
 ├── Dockerfile               # Multi-stage build
 └── docker-compose.yml
 ```
@@ -344,4 +364,4 @@ cheat-clip-pro/
 
 Distributed under the **MIT License**. Free for personal and commercial use. See [LICENSE](LICENSE).
 
-Originally created by [Galih Juan Saputra](https://github.com/galihjuansaputra); this fork adds backend hardening, in-browser rendering, Docker support, and tests.
+Originally created by [Galih Juan Saputra](https://github.com/galihjuansaputra); this fork adds backend hardening, in-browser rendering, Docker support, CI, and a frontend plus backend test suite.
