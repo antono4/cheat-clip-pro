@@ -685,6 +685,13 @@ export const id: Translations = {
     errorTitle: "Gagal Memperbarui",
     closeBtn: "Tutup",
   },
+  theme: {
+    label: "Pilihan tema",
+    dark: "Ganti ke tema gelap",
+    light: "Ganti ke tema terang",
+    darkShort: "Gelap",
+    lightShort: "Terang",
+  },
   videoGen: {
     title: "Generator Video AI",
     openBtn: "Video AI",

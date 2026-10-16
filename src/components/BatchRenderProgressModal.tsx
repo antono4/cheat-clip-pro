@@ -159,7 +159,7 @@ export const BatchRenderProgressModal: React.FC<BatchRenderProgressModalProps> =
                   style={{
                     background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                     border: '1px solid rgba(245, 158, 11, 0.7)',
-                    color: '#ffffff',
+                    color: 'var(--text-primary)',
                     fontWeight: 700,
                     fontSize: '0.75rem',
                     padding: '0.4rem 0.85rem',

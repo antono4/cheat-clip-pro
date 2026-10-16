@@ -240,8 +240,8 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
     width: '100%',
     padding: '0.6rem 0.75rem',
     borderRadius: '8px',
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(var(--tint), 0.12)',
+    background: 'rgba(var(--tint), 0.04)',
     color: 'var(--text-primary)',
     fontSize: '0.85rem',
     fontFamily: 'inherit',
@@ -283,8 +283,8 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                 fontSize: '0.82rem',
                 fontWeight: 700,
                 cursor: 'pointer',
-                border: tab === key ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)',
-                background: tab === key ? 'rgba(255,94,58,0.15)' : 'rgba(255,255,255,0.03)',
+                border: tab === key ? '1px solid var(--primary)' : '1px solid rgba(var(--tint), 0.1)',
+                background: tab === key ? 'rgba(255,94,58,0.15)' : 'rgba(var(--tint), 0.03)',
                 color: tab === key ? 'var(--primary)' : 'var(--text-secondary)',
               }}
             >
@@ -349,7 +349,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
             )}
 
             {promptResult && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.9rem', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.9rem', borderRadius: '10px', background: 'rgba(var(--tint), 0.03)', border: '1px solid rgba(var(--tint), 0.08)' }}>
                 {promptResult.title && (
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                     <strong>{promptResult.title}</strong>
@@ -382,7 +382,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                     [v.settingLabel, promptResult.setting],
                     [v.negativeLabel, promptResult.negative_prompt],
                   ] as [string, string | undefined][]).filter(([, val]) => val).map(([label, val]) => (
-                    <div key={label} style={{ padding: '0.5rem 0.6rem', borderRadius: '7px', background: 'rgba(255,255,255,0.03)' }}>
+                    <div key={label} style={{ padding: '0.5rem 0.6rem', borderRadius: '7px', background: 'rgba(var(--tint), 0.03)' }}>
                       <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 700 }}>{label}</div>
                       <div style={{ color: 'var(--text-primary)' }}>{val}</div>
                     </div>
@@ -506,7 +506,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
             )}
 
             {genStatus && (
-              <div style={{ padding: '0.9rem', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ padding: '0.9rem', borderRadius: '10px', background: 'rgba(var(--tint), 0.03)', border: '1px solid rgba(var(--tint), 0.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: genStatus.videos.length ? '0.75rem' : 0 }}>
                   {isGenerating && <span className="spinner-icon">⏳</span>}
                   <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
@@ -516,7 +516,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                 </div>
 
                 {isGenerating && (
-                  <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', marginTop: '0.5rem' }}>
+                  <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(var(--tint), 0.1)', overflow: 'hidden', marginTop: '0.5rem' }}>
                     <div style={{ height: '100%', width: '35%', background: 'var(--primary)', animation: 'pulse 1.6s ease-in-out infinite' }} />
                   </div>
                 )}

@@ -683,6 +683,13 @@ export const en = {
     errorTitle: "Update Error",
     closeBtn: "Close",
   },
+  theme: {
+    label: "Theme selection",
+    dark: "Switch to dark theme",
+    light: "Switch to light theme",
+    darkShort: "Dark",
+    lightShort: "Light",
+  },
   videoGen: {
     title: "AI Video Generator",
     openBtn: "AI Video",

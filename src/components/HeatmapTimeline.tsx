@@ -144,11 +144,11 @@ export const HeatmapTimeline: React.FC<HeatmapTimelineProps> = ({
             <span style={{
               fontSize: '0.62rem',
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.3)',
-              background: 'rgba(255,255,255,0.06)',
+              color: 'rgba(var(--tint), 0.3)',
+              background: 'rgba(var(--tint), 0.06)',
               padding: '0.1rem 0.4rem',
               borderRadius: '4px',
-              border: '1px solid rgba(255,255,255,0.1)'
+              border: '1px solid rgba(var(--tint), 0.1)'
             }}>{t.heatmap.notAvailable}</span>
           )}
         </span>
@@ -229,7 +229,7 @@ export const HeatmapTimeline: React.FC<HeatmapTimelineProps> = ({
                 y2={height}
                 stroke="var(--text-primary)"
                 strokeWidth="2"
-                style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.6))' }}
+                style={{ filter: 'drop-shadow(0 0 4px rgba(var(--tint), 0.6))' }}
               />
               <circle
                 cx={playheadX}
@@ -248,7 +248,7 @@ export const HeatmapTimeline: React.FC<HeatmapTimelineProps> = ({
                 y1="0"
                 x2={hoverX}
                 y2={height}
-                stroke="rgba(255, 255, 255, 0.25)"
+                stroke="rgba(var(--tint), 0.25)"
                 strokeWidth="1"
                 strokeDasharray="2,2"
               />
@@ -270,8 +270,8 @@ export const HeatmapTimeline: React.FC<HeatmapTimelineProps> = ({
               position: 'absolute',
               top: '4px',
               left: `${Math.min(svgWidth - 90, Math.max(10, hoverX - 45))}px`,
-              background: 'rgba(15, 23, 42, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'var(--panel-bg)',
+              border: '1px solid rgba(var(--tint), 0.1)',
               borderRadius: '4px',
               padding: '2px 6px',
               fontSize: '0.65rem',
