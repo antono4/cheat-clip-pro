@@ -573,7 +573,7 @@ def test_video_generation_job_completes_and_downloads(monkeypatch, fast_polling,
     sent_config = client.models.calls[0]["config"]
     assert sent_config.aspect_ratio == "9:16"
     assert sent_config.duration_seconds == 6
-    assert client.models.calls[0]["prompt"] == "a cat surfing"
+    assert client.models.calls[0]["source"].prompt == "a cat surfing"
     assert downloads == [("https://x/v.mp4", stored["videos"][0]["path"])]
 
 
@@ -658,6 +658,59 @@ def test_generate_video_endpoint_rejects_unknown_model():
     })
     assert resp.status_code == 400
     assert "Unknown Veo model" in resp.json()["detail"]
+
+
+# ── Veo request config (real SDK serialisation) ─────────────────────────────
+
+def test_veo_config_omits_generate_audio():
+    """The Gemini Developer API rejects `generate_audio` with a 400.
+
+    Regression guard: the job-level tests use a fake client, so a bad config
+    parameter only surfaces against the real SDK. Build the config for every
+    supported combination and assert the wire payload never carries the field.
+    """
+    for aspect in ("16:9", "9:16"):
+        for resolution in ("720p", "1080p", "4k"):
+            for duration in (4, 6, 8):
+                cfg = video_gen_service._build_config(
+                    aspect_ratio=aspect,
+                    resolution=resolution,
+                    duration_seconds=duration,
+                    number_of_videos=2,
+                    negative_prompt="blurry",
+                )
+                assert "generate_audio" not in cfg.model_dump(exclude_none=True)
+
+
+def test_veo_config_keeps_requested_values():
+    cfg = video_gen_service._build_config(
+        aspect_ratio="9:16",
+        resolution="1080p",
+        duration_seconds=6,
+        number_of_videos=3,
+        negative_prompt="  blurry  ",
+    )
+    payload = cfg.model_dump(exclude_none=True)
+    assert payload["aspect_ratio"] == "9:16"
+    assert payload["resolution"] == "1080p"
+    assert payload["duration_seconds"] == 6
+    assert payload["number_of_videos"] == 3
+    assert payload["negative_prompt"] == "blurry"
+
+
+def test_veo_config_drops_default_resolution_and_blank_negative_prompt():
+    """Older Veo revisions reject `resolution`; a blank negative prompt is noise."""
+    cfg = video_gen_service._build_config(
+        aspect_ratio="16:9",
+        resolution="720p",
+        duration_seconds=8,
+        number_of_videos=1,
+        negative_prompt="   ",
+    )
+    payload = cfg.model_dump(exclude_none=True)
+    assert "resolution" not in payload
+    assert "negative_prompt" not in payload
+
 
 
 def test_generate_video_endpoint_rejects_invalid_params():
