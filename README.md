@@ -145,7 +145,7 @@ Cheat Clip PRO supports two AI providers. Paste whichever key you have — the a
 3. Paste it into the same field — the model list switches to the Kimi family automatically.
 4. Pick `kimi-k3` for the strongest reasoning, or `kimi-k2.7` for lower latency.
 
-> 💡 **Tip:** Type `mock` in the API Key field to try the full UI with sample data — no API key required.
+> 💡 **Tip:** Type `mock` in the API Key field to run the **analysis pipeline** with sample data — no API key required. The `mock` key is rejected by the prompt-extraction and video-generation endpoints, which need a real Gemini or Kimi key.
 
 ---
 
