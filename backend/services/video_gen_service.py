@@ -96,7 +96,6 @@ def _build_config(
     duration_seconds: int,
     number_of_videos: int,
     negative_prompt: str = "",
-    generate_audio: bool = True,
 ) -> types.GenerateVideosConfig:
     kwargs: Dict[str, Any] = {
         "aspect_ratio": aspect_ratio,
@@ -109,7 +108,9 @@ def _build_config(
         kwargs["resolution"] = resolution
     if (negative_prompt or "").strip():
         kwargs["negative_prompt"] = negative_prompt.strip()
-    kwargs["generate_audio"] = generate_audio
+    # `generate_audio` is deliberately omitted: the Gemini Developer API (the
+    # mode an ordinary API key runs in) rejects it with a 400, whether it is set
+    # to True or False. Audio comes back anyway when the model supports it.
     return types.GenerateVideosConfig(**kwargs)
 
 
@@ -160,9 +161,11 @@ def run_video_generation_job(
     try:
         job["status"] = "submitting"
         client = genai.Client(api_key=api_key)
+        # `source` is the current form; the bare `prompt=` argument is deprecated
+        # and slated for removal.
         operation = client.models.generate_videos(
             model=model,
-            prompt=prompt,
+            source=types.GenerateVideosSource(prompt=prompt),
             config=_build_config(
                 aspect_ratio=aspect_ratio,
                 resolution=resolution,
