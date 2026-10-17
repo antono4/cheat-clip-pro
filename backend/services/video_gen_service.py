@@ -109,8 +109,9 @@ def _build_config(
     if (negative_prompt or "").strip():
         kwargs["negative_prompt"] = negative_prompt.strip()
     # `generate_audio` is deliberately omitted: the Gemini Developer API (the
-    # mode an ordinary API key runs in) rejects it with a 400, whether it is set
-    # to True or False. Audio comes back anyway when the model supports it.
+    # mode an ordinary API key runs in) rejects it with a 400, for both True and
+    # False. Leaving it unset lets the server apply its own default, which is the
+    # only option available in this mode.
     return types.GenerateVideosConfig(**kwargs)
 
 
