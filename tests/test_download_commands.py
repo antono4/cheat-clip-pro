@@ -11,6 +11,7 @@ executable-resolution behaviour that matters on Windows is covered separately by
 """
 
 import os
+import subprocess
 import stat
 import sys
 
@@ -130,3 +131,67 @@ def test_base_cmd_falls_back_to_python_module(monkeypatch):
     cmd = video_engine.get_yt_dlp_base_cmd(include_cookies=False)
 
     assert cmd[:3] == [sys.executable, "-m", "yt_dlp"]
+
+
+_PROXY_ENV = ("PROXY_URL", "WEBSHARE_PROXY", "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY",
+              "WEBSHARE_USERNAME", "WEBSHARE_PASSWORD")
+
+
+@pytest.fixture()
+def no_proxy_env(monkeypatch):
+    for key in _PROXY_ENV:
+        monkeypatch.delenv(key, raising=False)
+
+
+def test_base_cmd_omits_proxy_when_none_configured(no_proxy_env):
+    cmd = video_engine.get_yt_dlp_base_cmd(include_cookies=False)
+
+    assert "--proxy" not in cmd
+    assert video_engine.get_ffmpeg_proxy_args() == []
+
+
+def test_base_cmd_routes_through_configured_proxy(no_proxy_env, monkeypatch):
+    """Downloads must honour PROXY_URL; YouTube blocks datacenter IPs and the
+    transcript/metadata paths already proxy, so a 403 here was inconsistent."""
+    monkeypatch.setenv("PROXY_URL", "http://user:pass@proxy.example:8080")
+
+    cmd = video_engine.get_yt_dlp_base_cmd(include_cookies=False)
+
+    assert cmd[cmd.index("--proxy") + 1] == "http://user:pass@proxy.example:8080"
+
+
+def test_ffmpeg_proxy_args_feed_the_direct_url_trim(no_proxy_env, monkeypatch):
+    """The ffmpeg fallback fetches googlevideo URLs directly and needs the proxy
+    flag too, otherwise it 403s even when yt-dlp succeeded."""
+    monkeypatch.setenv("PROXY_URL", "http://user:pass@proxy.example:8080")
+
+    assert video_engine.get_ffmpeg_proxy_args() == [
+        "-http_proxy", "http://user:pass@proxy.example:8080"
+    ]
+
+
+def test_webshare_credentials_synthesize_a_rotating_proxy(no_proxy_env, monkeypatch):
+    monkeypatch.setenv("WEBSHARE_USERNAME", "acct-rotate")
+    monkeypatch.setenv("WEBSHARE_PASSWORD", "secret")
+
+    assert video_engine.get_download_proxy() == (
+        "http://acct-rotate:secret@p.webshare.io:80"
+    )
+
+
+def test_forbidden_error_is_actionable(no_proxy_env, fake_ytdlp, monkeypatch):
+    """A 403 must not surface as the generic 'check your internet' message."""
+    def fake_run(cmd, **kwargs):
+        return subprocess.CompletedProcess(
+            cmd, 1, "", "[https @ 0x1] HTTP error 403 Forbidden"
+        )
+
+    monkeypatch.setattr(video_engine.subprocess, "run", fake_run)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        video_engine.download_clip_segment(URL, 10.0, 20.0, "forbidden_probe_clip.mp4", None)
+
+    message = str(excinfo.value)
+    assert "403" in message
+    assert "PROXY_URL" in message
+    assert "yt-dlp-ejs" in message

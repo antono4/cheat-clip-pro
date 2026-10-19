@@ -236,7 +236,7 @@ Copy `backend/.env.template` to `backend/.env` (or create a root `.env`) and set
 | `HOST` / `PORT` | Bind address and port (default `127.0.0.1:8000`; Docker uses `0.0.0.0:8000`). |
 | `SUPADATA_API_KEYS` | Comma-separated Supadata keys for cloud transcript fallback (round-robin). |
 | `WEBSHARE_PROXY` / `WEBSHARE_USERNAME` / `WEBSHARE_PASSWORD` | Rotating proxy to avoid YouTube datacenter IP bans. |
-| `PROXY_URL` | Generic proxy URL for downloads. |
+| `PROXY_URL` | Proxy for YouTube downloads and metadata. Also accepts `WEBSHARE_PROXY` or a synthesized Webshare rotating proxy from `WEBSHARE_USERNAME`/`WEBSHARE_PASSWORD`. Required on datacenter hosts, where YouTube returns `403` to a bare IP. |
 | `REQUESTS_CA_BUNDLE` | Custom CA bundle for environments behind an SSL-inspecting proxy. |
 | `JOB_TTL_SECONDS` / `JOB_MAX_ENTRIES` | Tuning for the in-memory job registry. |
 | `TEMP_MAX_AGE_SECONDS` / `TEMP_STORAGE_QUOTA_GB` / `CLEANUP_INTERVAL_SECONDS` | Temp-file cleanup worker (TTL, quota ceiling, interval). |
@@ -305,6 +305,16 @@ FFmpeg was built without the `libass` subtitle filter. On macOS run `brew instal
 
 **"Sign in to confirm you're not a bot"**
 YouTube is throttling unauthenticated downloads. Click the 🍪 **Cookies** button, export your cookies with a browser extension such as *Get cookies.txt locally*, and paste them into the app to unlock 1080p downloads.
+
+**`Failed to download video clip segment from YouTube` / `HTTP error 403 Forbidden`**
+YouTube refused the media URL. Two causes, in order of likelihood:
+
+1. **Your IP is flagged.** Datacenter, cloud, VPN and some shared connections are blocked outright, and no cookie fixes it. Set `PROXY_URL` (or `WEBSHARE_PROXY`, or `WEBSHARE_USERNAME`/`WEBSHARE_PASSWORD`) in `backend/.env` so downloads exit through a residential IP, then restart the backend. Downloads, metadata and transcripts all use the same proxy.
+2. **Stale cookies.** Import fresh YouTube cookies with the 🍪 **Cookies Manager** button.
+
+A missing JavaScript challenge solver also causes `403`, and shows a `n challenge solving failed` warning. `yt-dlp-ejs` is now a declared dependency, so `pip install -r requirements.txt` installs it; a Node.js or Deno runtime on `PATH` is used to run the solver.
+
+If only *some* clips fail, retry — YouTube URLs expire after a few minutes, so a long batch can outlive the links it was given.
 
 **Analysis fails or returns no clips**
 Check your Gemini or Kimi API key and quota. The app retries across multiple models (Gemini Flash tiers or the Kimi K3/K2 series), and will fall back to heatmap-based clips if the AI cannot be reached. You can also upload a custom `.srt`/`.txt` subtitle file if auto-transcription fails.
