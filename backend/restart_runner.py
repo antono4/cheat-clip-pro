@@ -42,7 +42,7 @@ def free_ports_windows(ports=(8000, 5173)):
 
     # Method 2: Fallback netstat check
     try:
-        out = subprocess.check_output(["netstat", "-ano", "-p", "tcp"], text=True, timeout=5)
+        out = subprocess.check_output(["netstat", "-ano", "-p", "tcp"], text=True, encoding="utf-8", errors="replace", timeout=5)
         for line in out.splitlines():
             parts = line.strip().split()
             if len(parts) >= 5 and parts[0].upper() == "TCP":
@@ -69,7 +69,7 @@ def free_ports_unix(ports=(8000, 5173)):
     for p in ports:
         try:
             p_int = int(p)
-            out = subprocess.check_output(["lsof", "-ti", f":{p_int}"], text=True, timeout=5)
+            out = subprocess.check_output(["lsof", "-ti", f":{p_int}"], text=True, encoding="utf-8", errors="replace", timeout=5)
             for pid_str in out.splitlines():
                 pid_str = pid_str.strip()
                 if pid_str.isdigit() and int(pid_str) > 1:

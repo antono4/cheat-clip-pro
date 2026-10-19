@@ -141,7 +141,7 @@ def fetch_transcript_cli(
 
     logger.info(f"Executing CLI transcript extraction for {video_id}...")
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
         if proc.returncode == 0 and proc.stdout.strip():
             raw = json.loads(proc.stdout)
             items = raw[0] if isinstance(raw, list) and len(raw) > 0 and isinstance(raw[0], list) else raw

@@ -275,3 +275,42 @@ def test_forbidden_error_is_actionable(no_proxy_env, fake_ytdlp, monkeypatch):
     # JavaScript runtime; the old wording told users to reinstall the package.
     assert "Node.js" in message
     assert "Deno" in message
+
+
+def test_error_snippet_keeps_the_tail_not_the_url_head():
+    """The diagnosis is at the end of the output, after the long media URL.
+
+    A 403 from yt-dlp prints the whole googlevideo URL first and the reason
+    last, so a head slice dropped "HTTP Error 403" and the user got the generic
+    "check your internet connection" message instead of the 403 guidance.
+    """
+    url = "https://rr3---sn-x.googlevideo.com/videoplayback?" + "x" * 400
+    output = f"ERROR: [generic] {url}: Unable to download webpage: HTTP Error 403: Forbidden"
+
+    snippet = video_engine.error_snippet(output)
+
+    assert "403" in snippet
+    assert len(snippet) <= 303
+
+
+def test_forbidden_in_the_tail_still_triggers_actionable_message(no_proxy_env, fake_ytdlp, monkeypatch):
+    """End-to-end: a long failure output whose 403 sits past the old 300-char cut
+    must still produce the 403 guidance, not the generic fallback."""
+    noisy = (
+        "ERROR: [generic] https://rr3---sn-x.googlevideo.com/videoplayback?"
+        + "y" * 500
+        + ": Unable to download webpage: HTTP Error 403: Forbidden"
+    )
+
+    def fake_run(cmd, **kwargs):
+        return subprocess.CompletedProcess(cmd, 1, "", noisy)
+
+    monkeypatch.setattr(video_engine.subprocess, "run", fake_run)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        video_engine.download_clip_segment(URL, 10.0, 20.0, "tail403_probe_clip.mp4", None)
+
+    message = str(excinfo.value)
+    assert "403" in message
+    assert "PROXY_URL" in message
+    assert "Check your internet connection" not in message

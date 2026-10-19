@@ -162,7 +162,7 @@ def _ffmpeg_has_filter(executable: str, filter_name: str) -> bool:
         result = subprocess.run(
             [executable, "-hide_banner", "-filters"],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=8,
         )
         return result.returncode == 0 and re.search(
@@ -397,6 +397,22 @@ def get_ffmpeg_proxy_args() -> List[str]:
     return ["-http_proxy", proxy] if proxy else []
 
 
+def error_snippet(output: Optional[str], limit: int = 300) -> str:
+    """Return the actionable tail of a failed command's output.
+
+    yt-dlp and ffmpeg print progress and a full multi-hundred-character media
+    URL before the real failure, so a plain ``output[:limit]`` slice keeps the
+    URL and drops the diagnosis. The reason ("HTTP Error 403: Forbidden",
+    "Requested format is not available", ...) is at the end, so keep that.
+    """
+    text = (output or "").strip()
+    if not text:
+        return ""
+    if len(text) <= limit:
+        return text
+    return "..." + text[-limit:]
+
+
 def _resolve_yt_dlp_cmd() -> List[str]:
     """Return the argv prefix that launches yt-dlp.
 
@@ -510,7 +526,7 @@ def is_valid_mp4(file_path: Union[str, Path]) -> bool:
             "-of", "default=noprint_wrappers=1:nokey=1",
             str(p)
         ]
-        res = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=8)
+        res = subprocess.run(probe_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=8)
         if res.returncode == 0 and res.stdout.strip():
             try:
                 dur = float(res.stdout.strip())
@@ -534,7 +550,7 @@ def is_valid_mp4(file_path: Union[str, Path]) -> bool:
             "-t", "0.1",
             "-f", "null", "-"
         ]
-        res = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=8)
+        res = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=8)
         if res.returncode == 0:
             return True
         err = (res.stderr or "").lower()
@@ -569,7 +585,7 @@ def get_video_file_metadata(file_path: Union[str, Path]) -> Dict[str, Any]:
             "-of", "json",
             str(p)
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
         if res.returncode == 0 and res.stdout:
             data = json.loads(res.stdout)
             format_info = data.get("format", {})
@@ -819,7 +835,7 @@ def download_clip_segment(
             "-movflags", "+faststart",
             str(output_path)
         ]
-        res = subprocess.run(slice_cmd, capture_output=True, text=True, timeout=slice_timeout)
+        res = subprocess.run(slice_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=slice_timeout)
         if output_path.exists() and is_valid_mp4(output_path):
             return str(output_path)
         if output_path.exists():
@@ -873,7 +889,7 @@ def download_clip_segment(
                 clean_url
             ]
             try:
-                res = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_sec)
+                res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout_sec)
                 if res.returncode == 0 and is_valid_mp4(output_path):
                     logger.info(f"Successfully downloaded section ({mode_label}): {output_path} ({output_path.stat().st_size} bytes)")
                     return str(output_path)
@@ -883,7 +899,7 @@ def download_clip_segment(
                         output_path.unlink()
                     except Exception:
                         pass
-                last_err_snippet = res.stderr[:300] if (res and res.stderr) else "empty output or invalid file (moov atom missing)"
+                last_err_snippet = error_snippet(res.stderr) if (res and res.stderr) else "empty output or invalid file (moov atom missing)"
             except subprocess.TimeoutExpired:
                 logger.warning(f"yt-dlp download-sections timed out after {timeout_sec}s for {clean_url} ({mode_label}).")
                 if output_path.exists():
@@ -916,7 +932,7 @@ def download_clip_segment(
                     "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best",
                     clean_url
                 ]
-                url_res = subprocess.run(url_cmd, capture_output=True, text=True, timeout=30)
+                url_res = subprocess.run(url_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
                 if url_res.returncode == 0 and url_res.stdout.strip():
                     urls = url_res.stdout.strip().split("\n")
                     video_stream = urls[0]
@@ -943,7 +959,7 @@ def download_clip_segment(
                         "-movflags", "+faststart",
                         str(output_path)
                     ]
-                    trim_res = subprocess.run(trim_cmd, capture_output=True, text=True, timeout=trim_timeout)
+                    trim_res = subprocess.run(trim_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=trim_timeout)
                     if trim_res.returncode == 0 and is_valid_mp4(output_path):
                         logger.info(f"Successfully trimmed stream URLs with FFmpeg ({mode_label}): {output_path} ({output_path.stat().st_size} bytes)")
                         return str(output_path)
@@ -953,7 +969,7 @@ def download_clip_segment(
                                 output_path.unlink()
                             except Exception:
                                 pass
-                        last_err_snippet = trim_res.stderr[:300] if (trim_res and trim_res.stderr) else "stream trimming failed"
+                        last_err_snippet = error_snippet(trim_res.stderr) if (trim_res and trim_res.stderr) else "stream trimming failed"
             except Exception as e:
                 logger.error(f"Fallback stream trimming failed ({mode_label}): {e}")
                 if output_path.exists():
@@ -986,7 +1002,7 @@ def download_clip_segment(
                     clean_url
                 ]
                 timeout_720p = max(200, min(600, int(clip_duration * 4) + 60))
-                res_720p = subprocess.run(cmd_720p, capture_output=True, text=True, timeout=timeout_720p)
+                res_720p = subprocess.run(cmd_720p, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout_720p)
                 if res_720p.returncode == 0 and is_valid_mp4(output_path):
                     logger.info(f"Successfully downloaded 720p fallback section ({mode_label}): {output_path} ({output_path.stat().st_size} bytes)")
                     return str(output_path)
@@ -996,7 +1012,7 @@ def download_clip_segment(
                     except Exception:
                         pass
                 if res_720p and res_720p.stderr:
-                    last_err_snippet = res_720p.stderr[:300]
+                    last_err_snippet = error_snippet(res_720p.stderr)
             except Exception as e:
                 logger.warning(f"720p fallback failed ({mode_label}): {e}")
                 if output_path.exists():
@@ -1029,7 +1045,7 @@ def download_clip_segment(
                     clean_url
                 ]
                 timeout_480p = max(150, min(450, int(clip_duration * 3) + 45))
-                res_480p = subprocess.run(cmd_480p, capture_output=True, text=True, timeout=timeout_480p)
+                res_480p = subprocess.run(cmd_480p, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout_480p)
                 if res_480p.returncode == 0 and is_valid_mp4(output_path):
                     logger.info(f"Successfully downloaded 480p fallback section ({mode_label}): {output_path} ({output_path.stat().st_size} bytes)")
                     return str(output_path)
@@ -1039,7 +1055,7 @@ def download_clip_segment(
                     except Exception:
                         pass
                 if res_480p and res_480p.stderr:
-                    last_err_snippet = res_480p.stderr[:300]
+                    last_err_snippet = error_snippet(res_480p.stderr)
             except Exception as e:
                 logger.warning(f"480p fallback failed ({mode_label}): {e}")
                 if output_path.exists():
@@ -1129,7 +1145,7 @@ def download_full_raw_video(
             ]
             logger.info(f"Downloading full raw video ({mode_label}) from {clean_url} to {output_path}...")
 
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", bufsize=1)
             for line in iter(process.stdout.readline, ''):
                 raw_line = line.strip()
                 if not raw_line:
@@ -2833,7 +2849,7 @@ def check_has_audio(video_path: str) -> bool:
             "-of", "csv=p=0",
             str(video_path)
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=8)
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=8)
         return bool(res.stdout and res.stdout.strip())
     except Exception:
         return True
@@ -3080,13 +3096,13 @@ def render_clip_to_mp4(
 
     res = None
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=render_timeout)
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=render_timeout)
     except subprocess.TimeoutExpired:
         logger.warning(f"Hardware encoder ({chosen_encoder_name}) timed out after {render_timeout}s.")
         res = None
 
     if res is None or res.returncode != 0:
-        err_msg_initial = res.stderr[:250] if (res and res.stderr) else f"Timed out after {render_timeout}s"
+        err_msg_initial = error_snippet(res.stderr, 250) if (res and res.stderr) else f"Timed out after {render_timeout}s"
         logger.warning(f"Hardware encoder ({chosen_encoder_name}) failed or timed out: {err_msg_initial}")
         # Automatic fallback to universal CPU encoding (libx264) if chosen hardware encoder fails
         if chosen_encoder_name != "libx264":
@@ -3107,7 +3123,7 @@ def render_clip_to_mp4(
             ]
             res_cpu = None
             try:
-                res_cpu = subprocess.run(cpu_cmd, capture_output=True, text=True, timeout=cpu_render_timeout)
+                res_cpu = subprocess.run(cpu_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=cpu_render_timeout)
             except subprocess.TimeoutExpired:
                 logger.error(f"FFmpeg CPU fallback timed out after {cpu_render_timeout}s.")
                 if os.path.exists(output_mp4_path):
@@ -3241,7 +3257,7 @@ def extract_clip_frame(video_url: str, video_id: str, timestamp: float = 0.0, co
                 "--no-warnings",
                 clean_url
             ]
-            subprocess.run(slice_cmd, capture_output=True, text=True, timeout=20)
+            subprocess.run(slice_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
         if temp_slice.exists() and temp_slice.stat().st_size > 1000:
             ff_cmd = [
                 "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
