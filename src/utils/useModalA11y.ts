@@ -29,7 +29,13 @@ export function useModalA11y(isOpen: boolean, onClose: () => void, label?: strin
   const ref = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+
+  // Keep the latest onClose reachable from the keydown listener without making
+  // it an effect dependency (callers pass a fresh closure every render, which
+  // would re-run the effect and re-steal focus).
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const node = ref.current;
