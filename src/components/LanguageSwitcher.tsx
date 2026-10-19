@@ -84,10 +84,10 @@ export const LanguageSwitcher: React.FC = () => {
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           background: language === 'id' 
-            ? 'linear-gradient(135deg, var(--primary) 0%, #a855f7 100%)' 
+            ? 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)' 
             : 'transparent',
-          color: language === 'id' ? '#ffffff' : 'var(--text-secondary)',
-          boxShadow: language === 'id' ? '0 2px 8px rgba(168, 85, 247, 0.35)' : 'none',
+          color: language === 'id' ? 'var(--on-primary)' : 'var(--text-secondary)',
+          boxShadow: language === 'id' ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
         }}
         title="Bahasa Indonesia"
       >
@@ -111,10 +111,10 @@ export const LanguageSwitcher: React.FC = () => {
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           background: language === 'en' 
-            ? 'linear-gradient(135deg, var(--primary) 0%, #a855f7 100%)' 
+            ? 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)' 
             : 'transparent',
-          color: language === 'en' ? '#ffffff' : 'var(--text-secondary)',
-          boxShadow: language === 'en' ? '0 2px 8px rgba(168, 85, 247, 0.35)' : 'none',
+          color: language === 'en' ? 'var(--on-primary)' : 'var(--text-secondary)',
+          boxShadow: language === 'en' ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
         }}
         title="English"
       >

@@ -305,7 +305,7 @@ export const HeatmapTimeline: React.FC<HeatmapTimelineProps> = ({
             </span>
             {activeClip && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '2px', border: '1px dashed var(--secondary)', background: 'rgba(255, 94, 58, 0.1)' }}></span>
+                <span style={{ width: '8px', height: '8px', borderRadius: '2px', border: '1px dashed var(--secondary)', background: 'rgba(132, 204, 22, 0.1)' }}></span>
                 {t.heatmap.activeClipZone}
               </span>
             )}

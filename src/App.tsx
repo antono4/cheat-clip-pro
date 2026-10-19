@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } fro
 import { HeatmapTimeline } from './components/HeatmapTimeline';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
+import BrandLogo from './components/BrandLogo';
 import { CookiesModal } from './components/CookiesModal';
 import { AppUpdateModal } from './components/AppUpdateModal';
 import { resilientFetch, toErrorMessage } from './utils/api';
@@ -2301,7 +2302,7 @@ Transcript:
       {/* Header Area */}
       <header className="app-header">
         <div className="header-logo">
-          <span className="logo-emoji">⚡</span>
+          <BrandLogo size={40} />
           <div>
             <div className="logo-title-row">
               <h1 className="text-gradient logo-title">CHEAT CLIP</h1>
@@ -2424,8 +2425,8 @@ Transcript:
               fontSize: '0.8rem',
               borderRadius: '8px',
               textDecoration: 'none',
-              boxShadow: '0 4px 12px rgba(255, 94, 58, 0.2)',
-              background: 'linear-gradient(135deg, var(--secondary) 0%, #f43f5e 100%)'
+              boxShadow: '0 4px 12px var(--secondary-glow)',
+              background: 'var(--secondary)'
             }}
           >
             🐈‍⬛ {t.header.supportProject}
@@ -3031,8 +3032,8 @@ Transcript:
                     fontSize: '0.8rem',
                     fontWeight: 700,
                     color: 'var(--secondary)',
-                    background: 'rgba(255, 94, 58, 0.12)',
-                    border: '1px solid rgba(255, 94, 58, 0.3)',
+                    background: 'rgba(132, 204, 22, 0.12)',
+                    border: '1px solid rgba(132, 204, 22, 0.3)',
                     borderRadius: '6px',
                     padding: '0.1rem 0.5rem'
                   }}>
@@ -3270,13 +3271,13 @@ Transcript:
                     {t.form.previouslyAnalyzed}
                   </h3>
                   <span style={{
-                    background: 'rgba(168, 85, 247, 0.2)',
+                    background: 'rgba(16, 185, 129, 0.2)',
                     color: 'var(--primary)',
                     fontSize: '0.75rem',
                     fontWeight: 700,
                     padding: '0.15rem 0.65rem',
                     borderRadius: '9999px',
-                    border: '1px solid rgba(168, 85, 247, 0.45)'
+                    border: '1px solid rgba(16, 185, 129, 0.45)'
                   }}>
                     {history.length}
                   </span>
@@ -3458,8 +3459,8 @@ Transcript:
                       style={{
                         marginTop: '0.75rem',
                         fontSize: '0.78rem',
-                        background: 'rgba(168, 85, 247, 0.15)',
-                        border: '1px solid rgba(168, 85, 247, 0.35)',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.35)',
                         color: 'var(--primary)',
                         borderRadius: '6px',
                         padding: '0.35rem 0.8rem',
@@ -3576,8 +3577,8 @@ Transcript:
                             type="button"
                             onClick={(e) => { e.stopPropagation(); loadFromHistory(entry); }}
                             style={{
-                              background: 'rgba(168, 85, 247, 0.15)',
-                              border: '1px solid rgba(168, 85, 247, 0.4)',
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              border: '1px solid rgba(16, 185, 129, 0.4)',
                               color: 'var(--primary)',
                               borderRadius: '6px',
                               padding: '0.35rem 0.75rem',
@@ -4123,7 +4124,7 @@ Transcript:
                               style={{
                                 color: 'var(--accent)',
                                 fontWeight: '600',
-                                background: 'rgba(16, 185, 129, 0.1)',
+                                background: 'rgba(6, 182, 212, 0.1)',
                                 padding: '2px 6px',
                                 borderRadius: '4px',
                                 border: '1px solid rgba(16, 185, 129, 0.2)',
@@ -4159,16 +4160,16 @@ Transcript:
                         alignItems: 'center',
                         gap: '0.25rem',
                         borderRadius: '6px',
-                        background: copyTimestampMenuTarget === 'overview' ? 'rgba(255, 94, 58, 0.15)' : 'rgba(var(--tint), 0.05)',
-                        border: `1px solid ${copyTimestampMenuTarget === 'overview' ? 'rgba(255, 94, 58, 0.5)' : 'var(--border-color)'}`,
+                        background: copyTimestampMenuTarget === 'overview' ? 'rgba(132, 204, 22, 0.15)' : 'rgba(var(--tint), 0.05)',
+                        border: `1px solid ${copyTimestampMenuTarget === 'overview' ? 'rgba(132, 204, 22, 0.5)' : 'var(--border-color)'}`,
                         color: copyTimestampMenuTarget === 'overview' ? 'var(--secondary)' : 'var(--text-secondary)',
                         cursor: 'pointer',
                         fontWeight: 600,
                         transition: 'var(--transition-smooth)'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 94, 58, 0.12)';
-                        e.currentTarget.style.borderColor = 'rgba(255, 94, 58, 0.4)';
+                        e.currentTarget.style.background = 'rgba(132, 204, 22, 0.12)';
+                        e.currentTarget.style.borderColor = 'rgba(132, 204, 22, 0.4)';
                         e.currentTarget.style.color = 'var(--secondary)';
                       }}
                       onMouseLeave={(e) => {
@@ -4201,7 +4202,7 @@ Transcript:
                           padding: '0.5rem',
                           borderRadius: '6px',
                           background: isSelected
-                            ? 'rgba(255, 94, 58, 0.1)'
+                            ? 'rgba(132, 204, 22, 0.1)'
                             : 'rgba(var(--tint), 0.02)',
                           border: isSelected
                             ? '1px solid var(--secondary)'
@@ -4245,8 +4246,8 @@ Transcript:
                             fontWeight: 700,
                             color: clip.virality_score >= 90 ? 'var(--secondary)' : 'var(--primary)',
                             background: clip.virality_score >= 90
-                              ? 'rgba(255, 94, 58, 0.12)'
-                              : 'rgba(168, 85, 247, 0.12)',
+                              ? 'rgba(132, 204, 22, 0.12)'
+                              : 'rgba(16, 185, 129, 0.12)',
                             border: `1px solid ${clip.virality_score >= 90 ? 'rgba(255,94,58,0.35)' : 'rgba(168,85,247,0.35)'}`,
                             borderRadius: '4px',
                             padding: '0.05rem 0.35rem',
@@ -4269,7 +4270,7 @@ Transcript:
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.color = 'var(--secondary)';
-                              e.currentTarget.style.background = 'rgba(255, 94, 58, 0.15)';
+                              e.currentTarget.style.background = 'rgba(132, 204, 22, 0.15)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.color = 'var(--text-muted)';
@@ -4380,8 +4381,8 @@ Transcript:
                       onClick={() => toggleAllMarkedClips()}
                       title={result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? t.results.unmarkAllClips : t.results.markAllClips}
                       style={{
-                        background: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? 'rgba(239, 68, 68, 0.12)' : 'rgba(168, 85, 247, 0.12)',
-                        border: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(168, 85, 247, 0.35)',
+                        background: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                        border: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(16, 185, 129, 0.35)',
                         color: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? 'var(--danger)' : 'var(--primary)',
                         borderRadius: '5px',
                         padding: '0.2rem 0.55rem',
@@ -4512,9 +4513,9 @@ Transcript:
                                 transition: 'var(--transition-smooth)'
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)';
+                                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)';
                                 e.currentTarget.style.color = 'var(--primary)';
-                                e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                                e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.background = 'rgba(var(--tint), 0.05)';
@@ -4548,8 +4549,8 @@ Transcript:
                                   fontSize: '0.72rem',
                                   fontWeight: 'bold',
                                   color: 'var(--accent)',
-                                  background: 'rgba(16, 185, 129, 0.12)',
-                                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                                  background: 'rgba(6, 182, 212, 0.12)',
+                                  border: '1px solid rgba(6, 182, 212, 0.35)',
                                   borderRadius: '4px',
                                   padding: '0.05rem 0.35rem',
                                   cursor: 'pointer',
@@ -4575,7 +4576,7 @@ Transcript:
                               fontSize: '0.65rem',
                               fontWeight: 'bold',
                               color: 'var(--secondary)',
-                              background: 'rgba(255, 94, 58, 0.12)',
+                              background: 'rgba(132, 204, 22, 0.12)',
                               padding: '0.15rem 0.4rem',
                               borderRadius: '4px',
                               border: '1px solid var(--secondary)'
