@@ -2349,7 +2349,7 @@ Transcript:
               borderRadius: '8px',
               background: hasCookies ? 'rgba(34, 197, 94, 0.12)' : 'rgba(var(--tint), 0.05)',
               border: hasCookies ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid rgba(var(--tint), 0.1)',
-              color: hasCookies ? '#4ade80' : 'var(--text-secondary)',
+              color: hasCookies ? 'var(--success)' : 'var(--text-secondary)',
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
@@ -2455,7 +2455,7 @@ Transcript:
                 borderRadius: '10px',
                 border: sourceMode === 'youtube' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(var(--tint), 0.08)',
                 background: sourceMode === 'youtube' ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.08) 100%)' : 'rgba(var(--tint), 0.03)',
-                color: sourceMode === 'youtube' ? '#fff' : 'var(--text-secondary)',
+                color: sourceMode === 'youtube' ? 'var(--text-primary)' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontWeight: 600,
                 fontSize: '0.85rem',
@@ -2463,7 +2463,7 @@ Transcript:
                 boxShadow: sourceMode === 'youtube' ? '0 0 15px rgba(239, 68, 68, 0.2)' : 'none'
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ef4444' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--danger-strong)' }}>
                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
               </svg>
               {t.form.tabYoutube}
@@ -2486,7 +2486,7 @@ Transcript:
                 borderRadius: '10px',
                 border: sourceMode === 'gdrive' ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(var(--tint), 0.08)',
                 background: sourceMode === 'gdrive' ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.08) 100%)' : 'rgba(var(--tint), 0.03)',
-                color: sourceMode === 'gdrive' ? '#fff' : 'var(--text-secondary)',
+                color: sourceMode === 'gdrive' ? 'var(--text-primary)' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontWeight: 600,
                 fontSize: '0.85rem',
@@ -2522,7 +2522,7 @@ Transcript:
                 borderRadius: '10px',
                 border: sourceMode === 'upload' ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(var(--tint), 0.08)',
                 background: sourceMode === 'upload' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.08) 100%)' : 'rgba(var(--tint), 0.03)',
-                color: sourceMode === 'upload' ? '#fff' : 'var(--text-secondary)',
+                color: sourceMode === 'upload' ? 'var(--text-primary)' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontWeight: 600,
                 fontSize: '0.85rem',
@@ -2530,7 +2530,7 @@ Transcript:
                 boxShadow: sourceMode === 'upload' ? '0 0 15px rgba(59, 130, 246, 0.2)' : 'none'
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#3b82f6' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--info)' }}>
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -2686,7 +2686,7 @@ Transcript:
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#60a5fa'
+                    color: 'var(--info)'
                   }}>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="23 7 16 12 23 17 23 7"></polygon>
@@ -2710,7 +2710,7 @@ Transcript:
                       borderRadius: '8px',
                       background: 'rgba(59, 130, 246, 0.2)',
                       border: '1px solid rgba(59, 130, 246, 0.4)',
-                      color: '#93c5fd',
+                      color: 'var(--info)',
                       fontSize: '0.82rem',
                       fontWeight: 600
                     }}
@@ -2739,7 +2739,7 @@ Transcript:
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#60a5fa',
+                      color: 'var(--info)',
                       flexShrink: 0
                     }}>
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2766,7 +2766,7 @@ Transcript:
                           <span>⏱ {Math.round(uploadedVideoInfo.duration)}s</span>
                         )}
                         <span>•</span>
-                        <span style={{ color: '#10b981', fontWeight: 600 }}>✨ Whisper AI Auto-Transcribe</span>
+                        <span style={{ color: 'var(--success-strong)', fontWeight: 600 }}>✨ Whisper AI Auto-Transcribe</span>
                       </div>
                     </div>
                   </div>
@@ -2841,7 +2841,7 @@ Transcript:
                 <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   <span>
                     {t.form.apiKeyLabel}
-                    <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: '#f87171', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', padding: '0.1rem 0.35rem', letterSpacing: '0.04em' }}>{t.form.apiKeyRequired}</span>
+                    <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--danger)', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', padding: '0.1rem 0.35rem', letterSpacing: '0.04em' }}>{t.form.apiKeyRequired}</span>
                   </span>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <a
@@ -2878,7 +2878,7 @@ Transcript:
                   style={{ height: '42px' }}
                 />
                 {!apiKey.trim() && (
-                  <span style={{ fontSize: '0.75rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                     {t.form.apiKeyErrorHint}
                   </span>
@@ -3269,7 +3269,7 @@ Transcript:
                   </h3>
                   <span style={{
                     background: 'rgba(168, 85, 247, 0.2)',
-                    color: '#c084fc',
+                    color: 'var(--primary)',
                     fontSize: '0.75rem',
                     fontWeight: 700,
                     padding: '0.15rem 0.65rem',
@@ -3333,7 +3333,7 @@ Transcript:
                   border: '1px solid rgba(239, 68, 68, 0.35)',
                   animation: 'fadeIn 0.2s ease'
                 }}>
-                  <span style={{ fontSize: '0.74rem', color: '#fca5a5', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--danger)', fontWeight: 600 }}>
                     ⚠️ {t.form.areYouSure}
                   </span>
                   <button
@@ -3345,7 +3345,7 @@ Transcript:
                     style={{
                       fontSize: '0.74rem',
                       color: 'var(--text-primary)',
-                      background: '#ef4444',
+                      background: 'var(--danger-strong)',
                       border: 'none',
                       borderRadius: '6px',
                       padding: '0.25rem 0.55rem',
@@ -3382,7 +3382,7 @@ Transcript:
                   onClick={() => setConfirmClearAll(true)}
                   style={{
                     fontSize: '0.75rem',
-                    color: '#f87171',
+                    color: 'var(--danger)',
                     background: 'rgba(239, 68, 68, 0.1)',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
                     borderRadius: '8px',
@@ -3457,7 +3457,7 @@ Transcript:
                         fontSize: '0.78rem',
                         background: 'rgba(168, 85, 247, 0.15)',
                         border: '1px solid rgba(168, 85, 247, 0.35)',
-                        color: '#c084fc',
+                        color: 'var(--primary)',
                         borderRadius: '6px',
                         padding: '0.35rem 0.8rem',
                         cursor: 'pointer'
@@ -3531,12 +3531,12 @@ Transcript:
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                style={{ color: '#10b981', textDecoration: 'none', opacity: 0.9, fontWeight: 600 }}
+                                style={{ color: 'var(--success-strong)', textDecoration: 'none', opacity: 0.9, fontWeight: 600 }}
                               >
                                 🔗 Google Drive
                               </a>
                             ) : entry.source_type === 'upload' ? (
-                              <span style={{ color: '#3b82f6', opacity: 0.9, fontWeight: 600 }}>
+                              <span style={{ color: 'var(--info)', opacity: 0.9, fontWeight: 600 }}>
                                 📁 Local Video
                               </span>
                             ) : (
@@ -3554,13 +3554,13 @@ Transcript:
 
                           {/* Matched clip/quote search preview */}
                           {matchedClip && (
-                            <div style={{ fontSize: '0.72rem', color: '#c084fc', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               <span style={{ fontWeight: 600 }}>✨ {t.form.matchedClipLabel}:</span>
                               <span style={{ fontStyle: 'italic', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>"{matchedClip}"</span>
                             </div>
                           )}
                           {matchedQuote && (
-                            <div style={{ fontSize: '0.72rem', color: '#38bdf8', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--info)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               <span style={{ fontWeight: 600 }}>💬 {t.form.matchedQuoteLabel}:</span>
                               <span style={{ fontStyle: 'italic', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>"{matchedQuote}"</span>
                             </div>
@@ -3575,7 +3575,7 @@ Transcript:
                             style={{
                               background: 'rgba(168, 85, 247, 0.15)',
                               border: '1px solid rgba(168, 85, 247, 0.4)',
-                              color: '#c084fc',
+                              color: 'var(--primary)',
                               borderRadius: '6px',
                               padding: '0.35rem 0.75rem',
                               fontSize: '0.75rem',
@@ -3594,7 +3594,7 @@ Transcript:
                             style={{
                               background: 'rgba(239, 68, 68, 0.08)',
                               border: '1px solid rgba(239, 68, 68, 0.25)',
-                              color: '#ef4444',
+                              color: 'var(--danger-strong)',
                               borderRadius: '6px',
                               padding: '0.35rem 0.55rem',
                               cursor: 'pointer',
@@ -3619,9 +3619,9 @@ Transcript:
       {error && (
         <section className="glass-panel" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.05)' }}>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '1.5rem', color: '#ef4444', lineHeight: 1, marginTop: '2px' }}>⚠️</span>
+            <span style={{ fontSize: '1.5rem', color: 'var(--danger-strong)', lineHeight: 1, marginTop: '2px' }}>⚠️</span>
             <div style={{ flex: 1 }}>
-              <h4 style={{ color: '#ef4444', margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t.errors.analysisFailed}</h4>
+              <h4 style={{ color: 'var(--danger-strong)', margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t.errors.analysisFailed}</h4>
               {/* Subtitle failure actions */}
               {(error.toLowerCase().includes("subtitle") || error.toLowerCase().includes("transcript")) ? (
                 <>
@@ -3707,7 +3707,7 @@ Transcript:
                         style={{
                           background: 'rgba(239, 68, 68, 0.15)',
                           border: '1px solid rgba(239, 68, 68, 0.4)',
-                          color: '#fca5a5',
+                          color: 'var(--danger)',
                           borderRadius: '8px',
                           padding: '0.4rem 0.85rem',
                           fontSize: '0.8rem',
@@ -3863,7 +3863,7 @@ Transcript:
                         border: '1px solid rgba(59, 130, 246, 0.25)',
                         borderRadius: '6px',
                         fontSize: '0.75rem',
-                        color: '#60a5fa',
+                        color: 'var(--info)',
                         fontWeight: 600,
                         width: 'fit-content'
                       }}>
@@ -4061,7 +4061,7 @@ Transcript:
                   <div className="progress-card-header">
                     <span className="progress-card-title">
                       {rawDownloadProgress.status === 'ready' ? (
-                        <span style={{ color: '#4ade80' }}>✅ {t.rawDownload.readyBadge}</span>
+                        <span style={{ color: 'var(--success)' }}>✅ {t.rawDownload.readyBadge}</span>
                       ) : (
                         <>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="spinner-icon">
@@ -4377,7 +4377,7 @@ Transcript:
                       style={{
                         background: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? 'rgba(239, 68, 68, 0.12)' : 'rgba(168, 85, 247, 0.12)',
                         border: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(168, 85, 247, 0.35)',
-                        color: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? '#f87171' : 'var(--primary)',
+                        color: result.clips.every(clip => !!markedClips[`${clip.start_time}_${clip.end_time}`]) ? 'var(--danger)' : 'var(--primary)',
                         borderRadius: '5px',
                         padding: '0.2rem 0.55rem',
                         fontSize: '0.74rem',
@@ -4689,8 +4689,8 @@ Transcript:
                                   ? '1px solid rgba(34, 197, 94, 0.4)'
                                   : '1px solid rgba(59, 130, 246, 0.35)',
                                 color: isReady
-                                  ? '#4ade80'
-                                  : '#60a5fa',
+                                  ? 'var(--success)'
+                                  : 'var(--info)',
                                 fontWeight: 600,
                                 transition: 'var(--transition-smooth)'
                               }}
@@ -4882,11 +4882,11 @@ Transcript:
               textAlign: 'left',
               fontSize: '0.78rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#4ade80' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)' }}>
                 <span>✓</span>
                 <strong>{t.studio.confirmModalNotice}</strong>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--info)' }}>
                 <span>🛡️</span>
                 <strong>{t.header.confirmModalCookieNotice}</strong>
               </div>
