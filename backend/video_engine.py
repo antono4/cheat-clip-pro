@@ -397,6 +397,33 @@ def get_ffmpeg_proxy_args() -> List[str]:
     return ["-http_proxy", proxy] if proxy else []
 
 
+def _resolve_yt_dlp_cmd() -> List[str]:
+    """Return the argv prefix that launches yt-dlp.
+
+    A pip-installed ``yt-dlp.exe`` launcher is a real executable and is used
+    directly. ``.cmd``/``.bat`` console shims are deliberately skipped: they run
+    through ``cmd.exe``, which re-parses every argument, so a ``|`` in
+    ``--progress-template`` (and ``%`` in a URL or filename) is eaten by the
+    shell. That both breaks downloads and lets a crafted URL inject commands.
+    Falling back to ``python -m yt_dlp`` keeps argument passing intact.
+    """
+    resolved = shutil.which("yt-dlp")
+    if resolved and Path(resolved).suffix.lower() not in (".cmd", ".bat"):
+        return [resolved]
+
+    try:
+        import yt_dlp  # noqa: F401
+    except ImportError:
+        if resolved:
+            # Only a shell shim exists; it is still better than nothing.
+            return [resolved]
+        raise RuntimeError(
+            "yt-dlp is not installed in this Python environment. "
+            "Please run 'pip install yt-dlp' or 'pip install -r backend/requirements.txt'."
+        )
+    return [sys.executable, "-m", "yt_dlp"]
+
+
 def get_yt_dlp_base_cmd(
     include_cookies: bool = True,
     cookies_path: Optional[Union[str, Path]] = None,
@@ -410,18 +437,7 @@ def get_yt_dlp_base_cmd(
     # (yt-dlp.exe / yt-dlp.cmd). A bare "yt-dlp" name only works via CreateProcess
     # PATH search for real executables; a .cmd shim raises WinError 2 unless the
     # resolved path is passed to subprocess.
-    resolved = shutil.which("yt-dlp")
-    if resolved:
-        cmd = [resolved]
-    else:
-        try:
-            import yt_dlp
-            cmd = [sys.executable, "-m", "yt_dlp"]
-        except ImportError:
-            raise RuntimeError(
-                "yt-dlp is not installed in this Python environment. "
-                "Please run 'pip install yt-dlp' or 'pip install -r backend/requirements.txt'."
-            )
+    cmd = list(_resolve_yt_dlp_cmd())
 
     # Prefer deno (fast challenge solver for modern YouTube player), then node
     if shutil.which("deno"):
