@@ -340,6 +340,17 @@ pip install -r requirements-test.txt   # light subset: no torch/cv2/whisper
 pytest tests/
 ```
 
+The backend suite runs on Linux **and on Windows x64** in CI (the
+`backend-windows` job on `windows-latest`). Windows is the primary desktop
+target (`start.bat`, winget FFmpeg) and its default text encoding is the ANSI
+code page, not UTF-8, so the tests pin two Windows-only rules:
+
+- every text-mode `subprocess` call passes `encoding="utf-8"`, so child output
+  from yt-dlp/ffmpeg is not decoded as cp1252 (which raises
+  `UnicodeDecodeError` on non-Latin-1 clip titles);
+- failure output is summarised from the tail, where yt-dlp/ffmpeg put the real
+  reason, not the long media URL printed before it.
+
 Frontend unit tests use `vitest`:
 
 ```bash
@@ -384,7 +395,7 @@ cheat-clip-pro/
 ├── scripts/                 # Dev backend launcher
 ├── tests/                   # pytest suite
 ├── requirements-test.txt    # Light deps for CI (no torch/whisper)
-├── .github/workflows/       # CI: backend tests, frontend tsc/test/build, lint
+├── .github/workflows/       # CI: backend tests (Linux + Windows x64), frontend tsc/test/build, lint
 ├── AGENTS.md                # Repo notes for agents
 ├── Dockerfile               # Multi-stage build
 └── docker-compose.yml

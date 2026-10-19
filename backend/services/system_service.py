@@ -301,7 +301,7 @@ def run_git_command(args: List[str], cwd: Optional[Path] = None, timeout: int = 
             cwd=str(target_cwd),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=timeout
         )
         return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
