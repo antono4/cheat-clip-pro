@@ -57,9 +57,9 @@ export const ThemeSwitcher: React.FC = () => {
         aria-pressed={!isLight}
         style={{
           ...base,
-          background: !isLight ? 'linear-gradient(135deg, var(--primary) 0%, #a855f7 100%)' : 'transparent',
-          color: !isLight ? 'var(--ink-contrast)' : 'var(--text-secondary)',
-          boxShadow: !isLight ? '0 2px 8px rgba(168, 85, 247, 0.35)' : 'none',
+          background: !isLight ? 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)' : 'transparent',
+          color: !isLight ? 'var(--on-primary)' : 'var(--text-secondary)',
+          boxShadow: !isLight ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
         }}
         title={t.theme.dark}
       >
@@ -73,9 +73,9 @@ export const ThemeSwitcher: React.FC = () => {
         aria-pressed={isLight}
         style={{
           ...base,
-          background: isLight ? 'linear-gradient(135deg, var(--primary) 0%, #a855f7 100%)' : 'transparent',
-          color: isLight ? 'var(--ink-contrast)' : 'var(--text-secondary)',
-          boxShadow: isLight ? '0 2px 8px rgba(168, 85, 247, 0.35)' : 'none',
+          background: isLight ? 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)' : 'transparent',
+          color: isLight ? 'var(--on-primary)' : 'var(--text-secondary)',
+          boxShadow: isLight ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
         }}
         title={t.theme.light}
       >

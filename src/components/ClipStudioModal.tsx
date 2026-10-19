@@ -589,9 +589,9 @@ export const ClipStudioModal: React.FC<ClipStudioModalProps> = ({
                     type="button"
                     onClick={handleToggleAll}
                     style={{
-                      background: selectedClips.length === availableClips.length ? 'rgba(239, 68, 68, 0.12)' : 'rgba(168, 85, 247, 0.15)',
-                      border: selectedClips.length === availableClips.length ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(168, 85, 247, 0.4)',
-                      color: selectedClips.length === availableClips.length ? 'var(--danger)' : 'var(--primary, #a855f7)',
+                      background: selectedClips.length === availableClips.length ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.15)',
+                      border: selectedClips.length === availableClips.length ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(16, 185, 129, 0.4)',
+                      color: selectedClips.length === availableClips.length ? 'var(--danger)' : 'var(--primary)',
                       borderRadius: '5px',
                       padding: '0.18rem 0.5rem',
                       fontSize: '0.72rem',

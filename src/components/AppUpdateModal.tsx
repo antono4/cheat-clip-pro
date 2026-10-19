@@ -219,7 +219,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
           backgroundColor: 'var(--modal-bg)',
           border: '1px solid rgba(var(--tint), 0.12)',
           borderRadius: '16px',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75), 0 0 20px rgba(255, 94, 58, 0.1)',
+          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75), 0 0 20px rgba(132, 204, 22, 0.1)',
           overflow: 'hidden',
           animation: 'fadeInScale 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
@@ -291,7 +291,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                 style={{
                   width: '48px',
                   height: '48px',
-                  border: '3px solid rgba(255, 94, 58, 0.2)',
+                  border: '3px solid rgba(132, 204, 22, 0.2)',
                   borderTopColor: 'var(--primary)',
                   borderRadius: '50%',
                   animation: 'spin 0.8s linear infinite',
@@ -529,10 +529,10 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                     style={{
                       marginTop: '0.25rem',
                       padding: '0.7rem 1rem',
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
                       border: 'none',
                       borderRadius: '8px',
-                      color: 'var(--text-primary)',
+                      color: 'var(--on-primary)',
                       fontSize: '0.9rem',
                       fontWeight: 700,
                       cursor: 'pointer',

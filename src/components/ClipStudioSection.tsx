@@ -3672,9 +3672,9 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                   onClick={handleToggleAllClips}
                   title={selectedClips.length === allClips.length ? t.studio.unmarkAllClips : t.studio.markAllClips}
                   style={{
-                    background: selectedClips.length === allClips.length ? 'rgba(239, 68, 68, 0.12)' : 'rgba(168, 85, 247, 0.15)',
-                    border: selectedClips.length === allClips.length ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(168, 85, 247, 0.4)',
-                    color: selectedClips.length === allClips.length ? 'var(--danger)' : 'var(--primary, #a855f7)',
+                    background: selectedClips.length === allClips.length ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.15)',
+                    border: selectedClips.length === allClips.length ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(16, 185, 129, 0.4)',
+                    color: selectedClips.length === allClips.length ? 'var(--danger)' : 'var(--primary)',
                     borderRadius: '6px',
                     padding: '0.22rem 0.55rem',
                     fontSize: '0.72rem',
@@ -4372,9 +4372,9 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.35rem',
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
                           border: '1px solid rgba(16, 185, 129, 0.6)',
-                          color: 'var(--text-primary)',
+                          color: 'var(--on-primary)',
                           fontWeight: 700,
                           fontSize: '0.72rem',
                           padding: '0.3rem 0.65rem',
@@ -4454,7 +4454,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                         height: '100%',
                         background: batchProgress.overall_status === 'error'
                           ? 'var(--danger-strong)'
-                          : 'linear-gradient(90deg, #ff5e3a, #ff2a5f)',
+                          : 'linear-gradient(90deg, #84cc16, #65a30d)',
                         width: `${Math.round((batchProgress.clips.filter(c => c.status === 'completed').length / (batchProgress.total_clips || 1)) * 100)}%`,
                         transition: 'width 0.3s ease'
                       }}

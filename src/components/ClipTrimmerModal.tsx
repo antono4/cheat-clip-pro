@@ -614,7 +614,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
         {/* Header */}
         <div className="studio-modal-header" style={{ padding: '0.9rem 1.4rem', borderBottom: '1px solid rgba(var(--tint), 0.06)' }}>
           <div className="studio-header-title">
-            <div className="studio-icon-badge" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: 'var(--ink-contrast)' }}>
+            <div className="studio-icon-badge" style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', color: 'var(--on-primary)' }}>
               ✂️
             </div>
             <div>
@@ -939,7 +939,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                       {frontAdded > 0 ? `+${frontAdded}s (${formatSeconds(frontAdded)})` : '0s'}
                     </div>
                   </div>
-                  <div style={{ flex: 1, background: endAdded > 0 ? 'rgba(168, 85, 247, 0.12)' : 'rgba(var(--tint), 0.02)', padding: '0.35rem 0.6rem', borderRadius: '6px', border: `1px solid ${endAdded > 0 ? 'rgba(168, 85, 247, 0.3)' : 'rgba(var(--tint), 0.05)'}` }}>
+                  <div style={{ flex: 1, background: endAdded > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(var(--tint), 0.02)', padding: '0.35rem 0.6rem', borderRadius: '6px', border: `1px solid ${endAdded > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(var(--tint), 0.05)'}` }}>
                     <div style={{ fontSize: '0.64rem', color: 'var(--text-secondary)' }}>{t.trimmer.addedOutro}</div>
                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: endAdded > 0 ? 'var(--primary)' : 'var(--text-secondary)' }}>
                       {endAdded > 0 ? `+${endAdded}s (${formatSeconds(endAdded)})` : '0s'}
@@ -1131,7 +1131,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   bottom: 0,
                   left: `${timeToPct(origEnd)}%`,
                   right: 0,
-                  background: 'repeating-linear-gradient(45deg, rgba(168, 85, 247, 0.03), rgba(168, 85, 247, 0.03) 10px, rgba(168, 85, 247, 0.07) 10px, rgba(168, 85, 247, 0.07) 20px)',
+                  background: 'repeating-linear-gradient(45deg, rgba(16, 185, 129, 0.03), rgba(16, 185, 129, 0.03) 10px, rgba(16, 185, 129, 0.07) 10px, rgba(16, 185, 129, 0.07) 20px)',
                   borderLeft: '1px dashed rgba(234, 179, 8, 0.4)',
                   pointerEvents: 'none'
                 }}
@@ -1146,9 +1146,9 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   bottom: '4px',
                   left: `${timeToPct(adjustedStart)}%`,
                   width: `${Math.max(0.5, timeToPct(adjustedEnd) - timeToPct(adjustedStart))}%`,
-                  background: 'linear-gradient(90deg, rgba(56, 189, 248, 0.28) 0%, rgba(168, 85, 247, 0.28) 100%)',
+                  background: 'linear-gradient(90deg, rgba(56, 189, 248, 0.28) 0%, rgba(16, 185, 129, 0.28) 100%)',
                   borderTop: '2px solid #38bdf8',
-                  borderBottom: '2px solid #c084fc',
+                  borderBottom: '2px solid #34d399',
                   boxShadow: '0 0 15px rgba(56, 189, 248, 0.2)',
                   cursor: isDownloading ? 'not-allowed' : 'grab',
                   zIndex: 3,
@@ -1210,11 +1210,11 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   left: `${timeToPct(adjustedEnd)}%`,
                   width: '20px',
                   marginLeft: '-10px',
-                  background: 'linear-gradient(180deg, #c084fc, #9333ea)',
+                  background: 'linear-gradient(180deg, #34d399, #059669)',
                   borderRadius: '4px',
                   cursor: isDownloading ? 'not-allowed' : 'ew-resize',
                   zIndex: 10,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.6), 0 0 8px rgba(192, 132, 252, 0.5)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.6), 0 0 8px rgba(52, 211, 153, 0.5)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1228,7 +1228,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                   top: '-24px',
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  background: '#9333ea',
+                  background: '#059669',
                   color: 'var(--text-primary)',
                   fontSize: '0.65rem',
                   fontWeight: 700,
@@ -1344,7 +1344,7 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
               </div>
 
               {/* Right Column: Outro / Closing Steppers & Input */}
-              <div style={{ background: 'rgba(168, 85, 247, 0.04)', border: '1px solid rgba(168, 85, 247, 0.15)', borderRadius: '10px', padding: '0.55rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <div style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '10px', padding: '0.55rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--primary)' }}>
                     {t.trimmer.outroAdjustLabel}
@@ -1583,9 +1583,9 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
                 background: isDownloading
                   ? 'rgba(100, 116, 139, 0.4)'
                   : downloadSuccess
-                  ? 'linear-gradient(135deg, #10b981, #059669)'
-                  : 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                color: 'var(--text-primary)',
+                  ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
+                  : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                color: downloadSuccess ? 'var(--on-primary)' : 'var(--ink-contrast)',
                 border: 'none',
                 transition: 'var(--transition-smooth)'
               }}

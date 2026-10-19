@@ -201,6 +201,7 @@ Pass `--batch urls.txt --wait` to extract prompts for several videos (up to 20 p
 The header holds two independent switchers that persist per browser:
 
 - **Theme** — `Dark` or `Light`. The theme is applied before the first paint, so there is no flash of the wrong palette. Every surface, border, and status color is defined as a token and re-tuned for each theme.
+- **Brand palette** — Emerald primary with a lime secondary and a cyan accent. The brand mark is a monogram "C" with a play triangle, drawn as SVG so it stays sharp in the header, the favicon, and the dark and light themes alike. Text that sits on a brand fill uses a dedicated ink token, so it flips from dark to white when the fill darkens in the light theme.
 - **Language** — `ID` (Indonesian) or `EN` (English). All labels, buttons, hints, and error messages are translated.
 
 ---
