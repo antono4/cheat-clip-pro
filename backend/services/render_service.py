@@ -20,6 +20,7 @@ from backend.config import (
 )
 from backend.schemas.render import RenderBatchRequest, RenderSettingsModel
 from backend.utils.registry import TTLCache, register
+from backend.utils.text import safe_filename
 
 
 def _batch_finished(batch: Any) -> bool:
@@ -280,10 +281,12 @@ def update_batch_summary_and_zip(batch_id: str, settings: RenderSettingsModel):
                     fpath = EXPORTS_DIR / fname
                     if fpath.exists():
                         raw_title = (c.get("base_title") or c.get("title") or "").strip()
-                        clean_title = re.sub(r'[\\/*?:"<>|]', "", raw_title) or f"clip_{c.get('clip_index', 1)}"
-                        fn_pfx = re.sub(r'[\\/*?:"<>|]', "", settings.file_name_prefix or "")
-                        fn_sfx = re.sub(r'[\\/*?:"<>|]', "", settings.file_name_suffix or "")
-                        formatted_name = f"{fn_pfx}{clean_title}{fn_sfx}".strip() or clean_title
+                        clean_title = safe_filename(
+                            raw_title, fallback=f"clip_{c.get('clip_index', 1)}")
+                        fn_pfx = safe_filename(settings.file_name_prefix or "", fallback="")
+                        fn_sfx = safe_filename(settings.file_name_suffix or "", fallback="")
+                        formatted_name = safe_filename(
+                            f"{fn_pfx}{clean_title}{fn_sfx}".strip(), fallback=clean_title)
                         count = title_counts.get(formatted_name, 0)
                         title_counts[formatted_name] = count + 1
                         arc_name = f"{formatted_name}.mp4" if count == 0 else f"{formatted_name} ({count}).mp4"

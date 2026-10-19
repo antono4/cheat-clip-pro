@@ -411,6 +411,34 @@ def sanitize_first_person_title(title: str, speaker_or_channel: str = "", lang: 
     return t.strip()
 
 
+# Names Windows refuses to create as files, with or without an extension.
+_WINDOWS_RESERVED_NAMES = {
+    "CON", "PRN", "AUX", "NUL",
+    *(f"COM{i}" for i in range(1, 10)),
+    *(f"LPT{i}" for i in range(1, 10)),
+}
+_UNSAFE_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|\x00-\x1f]')
+
+
+def safe_filename(name: str, fallback: str = "clip", max_length: int = 120) -> str:
+    """Return a filename that is safe to create and extract on Windows.
+
+    Windows rejects ``\\ / : * ? " < > |`` and control characters, refuses the
+    reserved device names (``CON``, ``NUL``, ``LPT1``, ...) even with an
+    extension, and silently strips trailing dots or spaces. A zip built with such
+    a member name fails to extract on Windows, so callers that turn user text
+    into a filename must run it through here first.
+    """
+    cleaned = _UNSAFE_FILENAME_CHARS.sub("", name or "").strip()
+    # Trailing dots and spaces are dropped by Windows, which can collide with
+    # another member or leave a bare extension behind.
+    cleaned = cleaned.rstrip(". ")
+    if cleaned.upper() in _WINDOWS_RESERVED_NAMES:
+        cleaned = f"{cleaned}_"
+    cleaned = cleaned[:max_length].rstrip(". ")
+    return cleaned or fallback
+
+
 def is_safe_remote_url(url: str, allowed_domains: Optional[set] = None) -> bool:
     """
     Validates if a URL is safe to fetch remotely, preventing SSRF attacks to
