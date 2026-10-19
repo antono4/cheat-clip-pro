@@ -18,6 +18,12 @@ This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https
 | **Ranked viral clips + heatmap** | **Clip Studio — vertical preview** |
 | ![Results with recommended clips](docs/screenshots/05-recommended-clips.jpg) | ![Clip Studio preview](docs/screenshots/09-preview-vertical.jpg) |
 
+The whole UI ships in two themes — toggle **Dark / Light** in the header (your choice is remembered per browser):
+
+| Dark (default) | Light |
+| :---: | :---: |
+| ![Home screen, dark theme](docs/screenshots/01-home.jpg) | ![Home screen, light theme](docs/screenshots/12-home-light.jpg) |
+
 ---
 
 ## ✨ Features
@@ -36,7 +42,8 @@ This repository is an enhanced fork of [`galihjuansaputra/cheat-clip-pro`](https
 - **Batch prompt extraction** — Feed up to 20 videos at once and get one reusable text-to-video prompt per video; duplicates are dropped and a bad URL fails before any quota is spent.
 - **Client-side rendering (WASM)** — Optional FFmpeg WebAssembly renderer runs entirely in the browser for zero server CPU load.
 - **Hardware acceleration** — Auto-detects NVIDIA NVENC, AMD AMF, Intel QuickSync, and falls back to universal `libx264` CPU encoding.
-- **Two languages** — Full English and Indonesian UI.
+- **Light & dark themes** — A header switcher flips the entire UI between a bright paper canvas and a deep-dark workspace; the choice is stored in `localStorage` and applied before first paint. Status colors are tuned per theme so text keeps its contrast in both.
+- **Two languages** — Full English and Indonesian UI, switchable from the header.
 - **Privacy-first cookies** — YouTube cookies stay in browser `localStorage`; they are passed to `yt-dlp` only for the duration of a request.
 
 ### How it fits together
@@ -189,6 +196,13 @@ Pass `--batch urls.txt --wait` to extract prompts for several videos (up to 20 p
 - **Hook banner** — Enable/disable, edit the active clip title, add prefix/suffix, and control visible duration.
 - **Output filename** — Add a prefix/suffix to the generated clip filenames.
 
+### Appearance & language
+
+The header holds two independent switchers that persist per browser:
+
+- **Theme** — `Dark` or `Light`. The theme is applied before the first paint, so there is no flash of the wrong palette. Every surface, border, and status color is defined as a token and re-tuned for each theme.
+- **Language** — `ID` (Indonesian) or `EN` (English). All labels, buttons, hints, and error messages are translated.
+
 ---
 
 ## 🐳 Docker Deployment
@@ -298,6 +312,9 @@ Check your Gemini or Kimi API key and quota. The app retries across multiple mod
 **Does it work on AMD GPUs and Macs?**
 Yes — AMD (`h264_amf`), Intel (`h264_qsv`), and Apple/CPU (`libx264`) are all supported. Switch encoders anytime in Render Settings.
 
+**The page is blank / white after `npm run dev` (Windows or macOS)**
+A module import resolved to the wrong file because of a case-insensitive filesystem. Vite tries `.ts` before `.tsx`, so if two modules differ only by letter case the browser loads the wrong one and the app never mounts. The fix already shipped: context providers live in `LanguageProvider.tsx` / `ThemeProvider.tsx`. If you add modules, keep filenames unique regardless of case — `npm run test` runs a guard that fails on case-only collisions. See the browser console for `does not provide an export named` errors.
+
 ---
 
 ## 🧪 Tests
@@ -348,7 +365,8 @@ cheat-clip-pro/
 │   ├── services/            # client-side (WASM) renderer
 │   ├── utils/               # API client, audio extraction, cookie utils
 │   ├── types/               # Hand-written YouTube IFrame API types
-│   └── locales/             # English & Indonesian translations
+│   ├── locales/             # English & Indonesian translations
+│   └── theme/               # Light/dark theme provider
 ├── scripts/                 # Dev backend launcher
 ├── tests/                   # pytest suite
 ├── requirements-test.txt    # Light deps for CI (no torch/whisper)

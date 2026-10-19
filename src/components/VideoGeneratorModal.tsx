@@ -516,7 +516,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
             </button>
 
             {extractError && (
-              <div style={{ padding: '0.7rem 0.85rem', borderRadius: '8px', background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.35)', color: '#fca5a5', fontSize: '0.82rem' }}>
+              <div style={{ padding: '0.7rem 0.85rem', borderRadius: '8px', background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.35)', color: 'var(--danger)', fontSize: '0.82rem' }}>
                 {extractError}
               </div>
             )}
@@ -543,7 +543,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                       </span>
                     </div>
                     {item.error && (
-                      <div style={{ fontSize: '0.74rem', color: '#fca5a5' }}>{item.error}</div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--danger)' }}>{item.error}</div>
                     )}
                     {item.prompt && (
                       <>
@@ -730,7 +730,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{v.veoNotice}</div>
 
             {genError && (
-              <div style={{ padding: '0.7rem 0.85rem', borderRadius: '8px', background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.35)', color: '#fca5a5', fontSize: '0.82rem' }}>
+              <div style={{ padding: '0.7rem 0.85rem', borderRadius: '8px', background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.35)', color: 'var(--danger)', fontSize: '0.82rem' }}>
                 {genError}
               </div>
             )}

@@ -94,7 +94,7 @@ const ClipRenderErrorBox: React.FC<{ errorMessage: string; t: Translations; onRe
         border: '1px solid rgba(239, 68, 68, 0.28)',
         borderRadius: '7px',
         fontSize: '0.72rem',
-        color: '#fca5a5',
+        color: 'var(--danger)',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.35rem',
@@ -105,7 +105,7 @@ const ClipRenderErrorBox: React.FC<{ errorMessage: string; t: Translations; onRe
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.6rem' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
           <span style={{ fontSize: '0.9rem', flexShrink: 0 }}>⚠️</span>
-          <span style={{ fontWeight: 600, color: '#fca5a5' }}>{friendly}</span>
+          <span style={{ fontWeight: 600, color: 'var(--danger)' }}>{friendly}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
           {onRetry && (
@@ -139,7 +139,7 @@ const ClipRenderErrorBox: React.FC<{ errorMessage: string; t: Translations; onRe
               background: copied ? 'rgba(16, 185, 129, 0.2)' : 'rgba(var(--tint), 0.08)',
               border: `1px solid ${copied ? 'rgba(16, 185, 129, 0.4)' : 'rgba(var(--tint), 0.15)'}`,
               borderRadius: '4px',
-              color: copied ? '#34d399' : '#e2e8f0',
+              color: copied ? 'var(--success)' : 'var(--text-primary)',
               fontSize: '0.65rem',
               padding: '2px 7px',
               cursor: 'pointer',
@@ -154,7 +154,7 @@ const ClipRenderErrorBox: React.FC<{ errorMessage: string; t: Translations; onRe
       </div>
 
       <details style={{ fontSize: '0.67rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-        <summary style={{ cursor: 'pointer', color: '#cbd5e1', userSelect: 'none', fontWeight: 500 }}>
+        <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', userSelect: 'none', fontWeight: 500 }}>
           {t.studio.errorDetails || 'Technical Log Details'}
         </summary>
         <pre
@@ -164,7 +164,7 @@ const ClipRenderErrorBox: React.FC<{ errorMessage: string; t: Translations; onRe
             background: 'rgba(0, 0, 0, 0.55)',
             border: '1px solid rgba(239, 68, 68, 0.2)',
             borderRadius: '4px',
-            color: '#f87171',
+            color: 'var(--on-dark-danger)',
             fontSize: '0.65rem',
             fontFamily: 'Consolas, Monaco, monospace',
             whiteSpace: 'pre-wrap',
@@ -1551,12 +1551,12 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
               transition: 'all 0.2s ease',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.color = '#f87171';
-              e.currentTarget.style.borderColor = 'rgba(248, 113, 113, 0.4)';
-              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+              e.currentTarget.style.color = 'var(--danger)';
+              e.currentTarget.style.borderColor = 'var(--danger-border)';
+              e.currentTarget.style.background = 'var(--danger-bg)';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.color = '#94a3b8';
+              e.currentTarget.style.color = 'var(--text-secondary)';
               e.currentTarget.style.borderColor = 'rgba(var(--tint), 0.12)';
               e.currentTarget.style.background = 'rgba(var(--tint), 0.05)';
             }}
@@ -1703,7 +1703,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                         padding: '0.15rem 0.5rem',
                         borderRadius: '4px',
                         background: faceBox.type === 'salient_object' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-                        color: faceBox.type === 'salient_object' ? '#38bdf8' : '#4ade80',
+                        color: faceBox.type === 'salient_object' ? 'var(--info)' : 'var(--success)',
                         border: `1px solid ${faceBox.type === 'salient_object' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`,
                         fontWeight: 600
                       }}>
@@ -1787,7 +1787,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                   <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                     {t.studio.facecamPositionLabel || 'Facecam Position in Source:'}
                   </span>
-                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--info)', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
                     {facecamPosition === 'auto' ? 'AI AUTO-DETECT' : facecamPosition.toUpperCase().replace('_', '-')}
                   </span>
                 </div>
@@ -1996,7 +1996,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                         style={{ fontFamily: font.name, fontSize: '0.78rem' }}
                       >
                         {font.name}
-                        {font.is_custom && <span style={{ marginLeft: '4px', fontSize: '0.62rem', opacity: 0.85, color: '#fbbf24' }}>★</span>}
+                        {font.is_custom && <span style={{ marginLeft: '4px', fontSize: '0.62rem', opacity: 0.85, color: 'var(--warning)' }}>★</span>}
                       </button>
                     ))}
                   </div>
@@ -2402,7 +2402,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                         style={{ fontFamily: font.name, fontSize: '0.78rem' }}
                       >
                         {font.name}
-                        {font.is_custom && <span style={{ marginLeft: '4px', fontSize: '0.62rem', opacity: 0.85, color: '#fbbf24' }}>★</span>}
+                        {font.is_custom && <span style={{ marginLeft: '4px', fontSize: '0.62rem', opacity: 0.85, color: 'var(--warning)' }}>★</span>}
                       </button>
                     ))}
                   </div>
@@ -2735,7 +2735,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                   </label>
                 )}
               </div>
-              <span className="group-badge" style={{ color: bgmEnabled && bgmFilePath ? '#10b981' : 'var(--text-muted)' }}>
+              <span className="group-badge" style={{ color: bgmEnabled && bgmFilePath ? 'var(--success-strong)' : 'var(--text-muted)' }}>
                 {bgmEnabled && bgmFilePath ? t.studio.bgmActiveBadge : t.studio.bgmOptionalBadge}
               </span>
             </div>
@@ -2892,7 +2892,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
           <div className="studio-card-group">
             <div className="group-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="group-title">{t.studio.hookSfxTitle}</span>
-              <span className="group-badge" style={{ color: hookSfxFilePath ? '#10b981' : 'var(--text-muted)', fontWeight: 500 }}>
+              <span className="group-badge" style={{ color: hookSfxFilePath ? 'var(--success-strong)' : 'var(--text-muted)', fontWeight: 500 }}>
                 {hookSfxFilePath ? t.studio.hookSfxActiveBadge : t.studio.bgmOptionalBadge}
               </span>
             </div>
@@ -2940,7 +2940,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                     <span className="bgm-icon">⚡</span>
                     <div className="bgm-details">
                       <span className="bgm-filename" title={hookSfxFileName}>{hookSfxFileName}</span>
-                      <span className="bgm-status-tag" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', borderColor: 'rgba(234, 179, 8, 0.3)' }}>
+                      <span className="bgm-status-tag" style={{ background: 'rgba(234, 179, 8, 0.15)', color: 'var(--warning)', borderColor: 'rgba(234, 179, 8, 0.3)' }}>
                         {t.studio.hookSfxFirstFrameBadge}
                       </span>
                     </div>
@@ -3322,7 +3322,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                       onClick={handleResetWatermark}
                       style={{
                         background: 'rgba(239, 68, 68, 0.15)',
-                        color: '#f87171',
+                        color: 'var(--danger)',
                         border: '1px solid rgba(239, 68, 68, 0.3)',
                         fontSize: '0.72rem',
                         padding: '0.25rem 0.6rem',
@@ -3595,7 +3595,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
             <div className="group-header">
               <span className="group-title">⚡ {t.studio.renderModeTitle}</span>
               {renderMode === 'merged' && (
-                <span className="group-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                <span className="group-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                   {t.studio.compilationSegmentsSummary(selectedClips.length, totalSelectedDuration)}
                 </span>
               )}
@@ -3674,7 +3674,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                   style={{
                     background: selectedClips.length === allClips.length ? 'rgba(239, 68, 68, 0.12)' : 'rgba(168, 85, 247, 0.15)',
                     border: selectedClips.length === allClips.length ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(168, 85, 247, 0.4)',
-                    color: selectedClips.length === allClips.length ? '#f87171' : 'var(--primary, #a855f7)',
+                    color: selectedClips.length === allClips.length ? 'var(--danger)' : 'var(--primary, #a855f7)',
                     borderRadius: '6px',
                     padding: '0.22rem 0.55rem',
                     fontSize: '0.72rem',
@@ -3737,7 +3737,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                 style={{
                   fontSize: '0.72rem',
                   fontWeight: 700,
-                  color: isPlaying ? '#10b981' : playerReady ? '#38bdf8' : '#94a3b8',
+                  color: isPlaying ? 'var(--success-strong)' : playerReady ? 'var(--info)' : 'var(--text-secondary)',
                   background: isPlaying ? 'rgba(16, 185, 129, 0.15)' : playerReady ? 'rgba(56, 189, 248, 0.12)' : 'rgba(var(--tint), 0.08)',
                   border: isPlaying ? '1px solid rgba(16, 185, 129, 0.35)' : playerReady ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(var(--tint), 0.15)',
                   padding: '0.15rem 0.5rem',
@@ -4410,7 +4410,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                     background: 'rgba(239, 68, 68, 0.12)',
                     border: '1px solid rgba(239, 68, 68, 0.35)',
                     borderRadius: '7px',
-                    color: '#fca5a5',
+                    color: 'var(--danger)',
                     fontSize: '0.74rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -4453,7 +4453,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                       style={{
                         height: '100%',
                         background: batchProgress.overall_status === 'error'
-                          ? '#ef4444'
+                          ? 'var(--danger-strong)'
                           : 'linear-gradient(90deg, #ff5e3a, #ff2a5f)',
                         width: `${Math.round((batchProgress.clips.filter(c => c.status === 'completed').length / (batchProgress.total_clips || 1)) * 100)}%`,
                         transition: 'width 0.3s ease'
@@ -4527,14 +4527,14 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', maxWidth: '65%' }}>
-                            <span style={{ fontSize: '0.7rem', color: isError ? '#f87171' : 'var(--text-muted)', fontWeight: 600 }}>#{idx + 1}</span>
+                            <span style={{ fontSize: '0.7rem', color: isError ? 'var(--danger)' : 'var(--text-muted)', fontWeight: 600 }}>#{idx + 1}</span>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{clip.title}</span>
                           </div>
                           <div>
                             {clip.status === 'pending' && <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{t.studio.statusWaitingShort}</span>}
-                            {clip.status === 'downloading' && <span style={{ fontSize: '0.68rem', color: '#f59e0b' }}>{t.studio.statusSlicingShort}</span>}
-                            {clip.status === 'transcribing' && <span style={{ fontSize: '0.68rem', color: '#8b5cf6' }}>{t.studio.statusCaptionsShort}</span>}
-                            {clip.status === 'rendering' && <span style={{ fontSize: '0.68rem', color: '#3b82f6' }}>{t.studio.statusRenderingShort}</span>}
+                            {clip.status === 'downloading' && <span style={{ fontSize: '0.68rem', color: 'var(--warning-strong)' }}>{t.studio.statusSlicingShort}</span>}
+                            {clip.status === 'transcribing' && <span style={{ fontSize: '0.68rem', color: 'var(--primary)' }}>{t.studio.statusCaptionsShort}</span>}
+                            {clip.status === 'rendering' && <span style={{ fontSize: '0.68rem', color: 'var(--info)' }}>{t.studio.statusRenderingShort}</span>}
                             {clip.status === 'completed' && (
                               clip.download_url ? (
                                 <a
@@ -4546,7 +4546,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                                   ⬇️ MP4
                                 </a>
                               ) : (
-                                <span className="quick-dl-btn" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                                <span className="quick-dl-btn" style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success-strong)' }}>
                                   ✓ Done
                                 </span>
                               )
@@ -4557,7 +4557,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                                   style={{
                                     fontSize: '0.68rem',
                                     fontWeight: 700,
-                                    color: '#f87171',
+                                    color: 'var(--danger)',
                                     background: 'rgba(239, 68, 68, 0.18)',
                                     padding: '2px 8px',
                                     borderRadius: '4px',
@@ -4574,7 +4574,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                                       background: 'rgba(245, 158, 11, 0.18)',
                                       border: '1px solid rgba(245, 158, 11, 0.5)',
                                       borderRadius: '4px',
-                                      color: '#fbbf24',
+                                      color: 'var(--warning)',
                                       fontSize: '0.68rem',
                                       fontWeight: 700,
                                       padding: '2px 8px',
@@ -4639,7 +4639,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                   {isClearingTemp ? t.studio.clearingTempBtn : t.studio.clearTempBtn}
                 </button>
                 {tempClearMsg && (
-                  <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--success)', fontWeight: 600 }}>
                     {tempClearMsg}
                   </span>
                 )}
@@ -4696,11 +4696,11 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
               textAlign: 'left',
               fontSize: '0.78rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#4ade80' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)' }}>
                 <span>✓</span>
                 <strong>{t.studio.confirmModalNotice}</strong>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--info)' }}>
                 <span>🛡️</span>
                 <strong>{t.studio.confirmModalCookieNotice}</strong>
               </div>

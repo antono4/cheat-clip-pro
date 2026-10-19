@@ -338,7 +338,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                   width: '44px',
                   height: '44px',
                   border: '3px solid rgba(16, 185, 129, 0.2)',
-                  borderTopColor: '#10b981',
+                  borderTopColor: 'var(--success-strong)',
                   borderRadius: '50%',
                   animation: 'spin 0.8s linear infinite',
                 }}
@@ -455,7 +455,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                 >
                   <span style={{ fontSize: '1.3rem' }}>🛡️</span>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: '0.88rem', color: '#60a5fa', fontWeight: 600 }}>
+                    <h4 style={{ margin: 0, fontSize: '0.88rem', color: 'var(--info)', fontWeight: 600 }}>
                       Server / Production Deployment
                     </h4>
                     <p style={{ margin: '5px 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
@@ -478,7 +478,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '1.2rem' }}>🚀</span>
                     <div>
-                      <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#34d399', fontWeight: 700 }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--success)', fontWeight: 700 }}>
                         {t.updateModal.updateAvailableTitle}
                       </h4>
                       <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -507,7 +507,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                       >
                         {info.changelog.map((c, i) => (
                           <div key={i} style={{ fontSize: '0.78rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                            <span style={{ fontFamily: 'monospace', color: '#6ee7b7', fontWeight: 600, flexShrink: 0 }}>
+                            <span style={{ fontFamily: 'monospace', color: 'var(--success)', fontWeight: 600, flexShrink: 0 }}>
                               {c.hash}
                             </span>
                             <span style={{ color: 'var(--text-primary)', wordBreak: 'break-word' }}>
@@ -559,7 +559,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                     <span style={{ fontSize: '1.2rem' }}>✅</span>
                     <div>
-                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#34d399', fontWeight: 600 }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--success)', fontWeight: 600 }}>
                         {t.updateModal.upToDateTitle}
                       </h4>
                       <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -595,7 +595,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
                     background: 'rgba(239, 68, 68, 0.1)',
                     border: '1px solid rgba(239, 68, 68, 0.25)',
                     borderRadius: '8px',
-                    color: '#f87171',
+                    color: 'var(--danger)',
                     fontSize: '0.8rem',
                     lineHeight: 1.4,
                   }}

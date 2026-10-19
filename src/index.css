@@ -87,6 +87,38 @@
   --card-strong: rgba(15, 23, 42, 0.65);
   --card-strong-hover: rgba(15, 23, 42, 0.85);
   --on-accent: #080b14;        /* Text on emerald/accent surfaces */
+
+  /* Status colors. The dark palette uses bright, high-luminance hues; the light
+   * theme needs darker ones or the text falls under 3:1 on a white surface. */
+  --danger: #f87171;
+  --danger-strong: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.3);
+
+  --success: #4ade80;
+  --success-strong: #10b981;
+  --success-bg: rgba(34, 197, 94, 0.15);
+  --success-border: rgba(34, 197, 94, 0.4);
+
+  --warning: #facc15;
+  --warning-strong: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --warning-border: rgba(245, 158, 11, 0.35);
+
+  --info: #38bdf8;
+  --info-strong: #3b82f6;
+  --info-bg: rgba(56, 189, 248, 0.15);
+  --info-border: rgba(56, 189, 248, 0.3);
+
+  /* Text sitting on an always-dark surface (video preview, log wells). These
+   * stay bright in both themes because the surface behind them is always dark. */
+  --on-dark-muted: #cbd5e1;
+  --on-dark-subtle: #94a3b8;
+  --on-dark-danger: #f87171;
+  --on-dark-info: #38bdf8;
+  --on-dark-success: #4ade80;
+  --on-dark-warning: #facc15;
+  --on-dark-primary: #c084fc;
 }
 
 [data-theme="light"] {
@@ -137,6 +169,27 @@
   --card-strong: rgba(15, 23, 42, 0.04);
   --card-strong-hover: rgba(15, 23, 42, 0.07);
   --on-accent: #ffffff;
+
+  /* Darker status hues so they clear 4.5:1 on the paper/white surfaces. */
+  --danger: #dc2626;
+  --danger-strong: #b91c1c;
+  --danger-bg: rgba(220, 38, 38, 0.08);
+  --danger-border: rgba(220, 38, 38, 0.35);
+
+  --success: #15803d;
+  --success-strong: #166534;
+  --success-bg: rgba(21, 128, 61, 0.10);
+  --success-border: rgba(21, 128, 61, 0.35);
+
+  --warning: #b45309;
+  --warning-strong: #92400e;
+  --warning-bg: rgba(180, 83, 9, 0.10);
+  --warning-border: rgba(180, 83, 9, 0.35);
+
+  --info: #0369a1;
+  --info-strong: #075985;
+  --info-bg: rgba(3, 105, 161, 0.10);
+  --info-border: rgba(3, 105, 161, 0.3);
 }
 
 * {
@@ -340,7 +393,7 @@ h1, h2, h3, h4 {
 }
 
 .form-input.input-error-highlight:focus {
-  border-color: #f87171;
+  border-color: var(--danger);
   box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.18);
 }
 
@@ -967,7 +1020,7 @@ h1, h2, h3, h4 {
 
 .timestamp-menu-empty-notice {
   font-size: 0.72rem;
-  color: #fbbf24;
+  color: var(--warning);
   background: rgba(245, 158, 11, 0.1);
   border: 1px dashed rgba(245, 158, 11, 0.3);
   border-radius: 6px;
@@ -1704,7 +1757,7 @@ label[for="manual-subtitle-file"]:hover {
 
 .font-dropzone.drag-over {
   background: rgba(56, 189, 248, 0.18) !important;
-  border-color: #38bdf8 !important;
+  border-color: var(--info) !important;
   border-style: solid !important;
   box-shadow: 0 0 20px rgba(56, 189, 248, 0.4) !important;
   transform: scale(1.008);
@@ -1949,7 +2002,7 @@ label[for="manual-subtitle-file"]:hover {
 .batch-title-clip-badge {
   font-size: 0.72rem;
   font-weight: 800;
-  color: #38bdf8;
+  color: var(--info);
   background: rgba(56, 189, 248, 0.15);
   border: 1px solid rgba(56, 189, 248, 0.35);
   padding: 0.1rem 0.45rem;
@@ -1965,7 +2018,7 @@ label[for="manual-subtitle-file"]:hover {
 .batch-title-score-pill {
   font-size: 0.68rem;
   font-weight: 700;
-  color: #f59e0b;
+  color: var(--warning-strong);
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.3);
   padding: 0.1rem 0.4rem;
@@ -1991,7 +2044,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .batch-title-reset-btn:hover {
-  color: #f87171;
+  color: var(--danger);
   background: rgba(239, 68, 68, 0.1);
 }
 
@@ -2010,13 +2063,13 @@ label[for="manual-subtitle-file"]:hover {
 .batch-title-preview-btn:hover {
   background: rgba(56, 189, 248, 0.2);
   border-color: rgba(56, 189, 248, 0.5);
-  color: #38bdf8;
+  color: var(--info);
 }
 
 .batch-title-preview-btn.is-active {
   background: rgba(56, 189, 248, 0.25);
-  border-color: #38bdf8;
-  color: #38bdf8;
+  border-color: var(--info);
+  color: var(--info);
   font-weight: 700;
 }
 
@@ -2037,7 +2090,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .batch-title-input:focus {
-  border-color: #38bdf8;
+  border-color: var(--info);
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
   outline: none;
 }
@@ -2093,7 +2146,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .segment-reorder-btn:hover:not(:disabled) {
-  color: #38bdf8;
+  color: var(--info);
   background: rgba(56, 189, 248, 0.15);
 }
 
@@ -2187,7 +2240,7 @@ label[for="manual-subtitle-file"]:hover {
 .compilation-label {
   font-size: 0.76rem;
   font-weight: 700;
-  color: #34d399;
+  color: var(--success);
 }
 
 .compilation-title-input {
@@ -2204,7 +2257,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .compilation-title-input:focus {
-  border-color: #34d399;
+  border-color: var(--success);
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
 }
 
@@ -2707,7 +2760,7 @@ label[for="manual-subtitle-file"]:hover {
   box-shadow: none !important;
   background: rgba(var(--tint), 0.08) !important;
   border: 1px solid rgba(var(--tint), 0.12) !important;
-  color: #94a3b8 !important;
+  color: var(--text-secondary) !important;
 }
 
 /* ============================================================
@@ -2832,13 +2885,13 @@ label[for="manual-subtitle-file"]:hover {
 
 .status-badge.success {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  color: var(--success-strong);
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .status-badge.error {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--danger-strong);
 }
 
 .completed-action-row {
@@ -3000,7 +3053,7 @@ label[for="manual-subtitle-file"]:hover {
   border-radius: 4px;
   font-family: monospace;
   font-size: 0.78rem;
-  color: #60a5fa;
+  color: var(--info);
 }
 
 .cookie-preview-details {
@@ -3026,7 +3079,7 @@ label[for="manual-subtitle-file"]:hover {
 .btn-danger-outline {
   background: transparent;
   border: 1px solid rgba(239, 68, 68, 0.5);
-  color: #f87171;
+  color: var(--danger);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.4rem 0.85rem;
@@ -3037,7 +3090,7 @@ label[for="manual-subtitle-file"]:hover {
 
 .btn-danger-outline:hover {
   background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
+  border-color: var(--danger-strong);
 }
 
 .cookie-alert-box {
@@ -3051,19 +3104,19 @@ label[for="manual-subtitle-file"]:hover {
 .cookie-alert-box.alert-success {
   background: rgba(34, 197, 94, 0.15);
   border: 1px solid rgba(34, 197, 94, 0.4);
-  color: #4ade80;
+  color: var(--success);
 }
 
 .cookie-alert-box.alert-error {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #f87171;
+  color: var(--danger);
 }
 
 .cookie-alert-box.alert-info {
   background: rgba(59, 130, 246, 0.15);
   border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #60a5fa;
+  color: var(--info);
 }
 
 .cookies-body-section {
@@ -3134,7 +3187,7 @@ label[for="manual-subtitle-file"]:hover {
 .cookies-guide-card h4 {
   margin: 0 0 0.5rem 0;
   font-size: 0.82rem;
-  color: #fbbf24;
+  color: var(--warning);
 }
 
 .cookies-guide-card ol {
@@ -3146,7 +3199,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .cookies-guide-card a {
-  color: #60a5fa;
+  color: var(--info);
   text-decoration: underline;
 }
 
@@ -3328,7 +3381,7 @@ label[for="manual-subtitle-file"]:hover {
   font-size: 0.72rem;
   font-weight: 600;
   background: rgba(59, 130, 246, 0.14);
-  color: #60a5fa;
+  color: var(--info);
   border: 1px solid rgba(59, 130, 246, 0.3);
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
@@ -3342,7 +3395,7 @@ label[for="manual-subtitle-file"]:hover {
 
 .group-badge.success-badge {
   background: rgba(34, 197, 94, 0.14);
-  color: #4ade80;
+  color: var(--success);
   border-color: rgba(34, 197, 94, 0.35);
 }
 
@@ -3503,7 +3556,7 @@ label[for="manual-subtitle-file"]:hover {
 .preview-indicator {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #4ade80;
+  color: var(--success);
   background: rgba(34, 197, 94, 0.12);
   border: 1px solid rgba(34, 197, 94, 0.3);
   padding: 0.1rem 0.4rem;
@@ -3573,7 +3626,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .progress-card-title {
-  color: #60a5fa;
+  color: var(--info);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -4128,7 +4181,7 @@ label[for="manual-subtitle-file"]:hover {
 .history-badge-pill {
   font-size: 0.68rem;
   font-weight: 700;
-  color: #38bdf8;
+  color: var(--info);
   background: rgba(56, 189, 248, 0.12);
   border: 1px solid rgba(56, 189, 248, 0.3);
   padding: 0.1rem 0.45rem;
@@ -4163,7 +4216,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .history-info-item .highlight-green {
-  color: #10b981;
+  color: var(--success-strong);
 }
 
 /* Hardware Acceleration Settings in Controls Pane */
@@ -4196,7 +4249,7 @@ label[for="manual-subtitle-file"]:hover {
 
 .hardware-option-card.active {
   background: rgba(56, 189, 248, 0.09);
-  border-color: #38bdf8;
+  border-color: var(--info);
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
 }
 
@@ -4273,7 +4326,7 @@ label[for="manual-subtitle-file"]:hover {
   -webkit-appearance: none;
   background: rgba(34, 197, 94, 0.12);
   border: 1px solid rgba(34, 197, 94, 0.35);
-  color: #4ade80;
+  color: var(--success);
   border-radius: 6px;
   padding: 2px 8px;
   font-size: 0.72rem;
@@ -4288,7 +4341,7 @@ label[for="manual-subtitle-file"]:hover {
 
 .history-hw-select:hover,
 .history-hw-select:focus {
-  border-color: #4ade80;
+  border-color: var(--success);
   background: rgba(34, 197, 94, 0.22);
   box-shadow: 0 0 10px rgba(74, 222, 128, 0.25);
 }
@@ -4344,7 +4397,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .recent-file-row .quick-dl-btn {
-  color: #10b981;
+  color: var(--success-strong);
   text-decoration: none;
   font-weight: 700;
   font-size: 0.68rem;
@@ -4418,7 +4471,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .slider-input-badge-wrap:focus-within {
-  border-color: #38bdf8;
+  border-color: var(--info);
   background: rgba(56, 189, 248, 0.12);
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
 }
@@ -4427,7 +4480,7 @@ label[for="manual-subtitle-file"]:hover {
   width: 44px;
   background: transparent;
   border: none;
-  color: #38bdf8;
+  color: var(--info);
   font-family: 'Outfit', monospace, sans-serif;
   font-weight: 700;
   font-size: 0.74rem;
@@ -4616,7 +4669,7 @@ label[for="manual-subtitle-file"]:hover {
 .bgm-dropzone.drag-over,
 .bgm-upload-dropzone.drag-over {
   background: rgba(168, 85, 247, 0.14) !important;
-  border-color: #c084fc !important;
+  border-color: var(--primary) !important;
   border-style: solid !important;
   box-shadow: 0 0 24px rgba(168, 85, 247, 0.35) !important;
   transform: scale(1.008);
@@ -4686,7 +4739,7 @@ label[for="manual-subtitle-file"]:hover {
 
 .bgm-status-tag {
   font-size: 0.68rem;
-  color: #10b981;
+  color: var(--success-strong);
   font-weight: 600;
 }
 
@@ -4721,7 +4774,7 @@ label[for="manual-subtitle-file"]:hover {
 .bgm-remove-btn {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  color: var(--danger-strong);
   font-size: 0.82rem;
   width: 30px;
   height: 30px;
@@ -4735,7 +4788,7 @@ label[for="manual-subtitle-file"]:hover {
 
 .bgm-remove-btn:hover {
   background: rgba(239, 68, 68, 0.25);
-  border-color: #ef4444;
+  border-color: var(--danger-strong);
   color: var(--text-primary);
 }
 
@@ -4870,7 +4923,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .pfx-highlight {
-  color: #38bdf8;
+  color: var(--info);
   font-weight: 800;
 }
 
@@ -4880,7 +4933,7 @@ label[for="manual-subtitle-file"]:hover {
 }
 
 .sfx-highlight {
-  color: #f59e0b;
+  color: var(--warning-strong);
   font-weight: 800;
 }
 
@@ -4896,7 +4949,7 @@ label[for="manual-subtitle-file"]:hover {
   border-radius: 8px;
   padding: 0.55rem 0.8rem;
   font-size: 0.76rem;
-  color: #fca5a5;
+  color: var(--danger);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -4931,7 +4984,7 @@ label[for="manual-subtitle-file"]:hover {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #38bdf8;
+  color: var(--info);
 }
 
 .filename-preview-tag {
@@ -4940,7 +4993,7 @@ label[for="manual-subtitle-file"]:hover {
   padding: 0.1rem 0.45rem;
   border-radius: 4px;
   background: rgba(56, 189, 248, 0.14);
-  color: #38bdf8;
+  color: var(--info);
   border: 1px solid rgba(56, 189, 248, 0.25);
 }
 

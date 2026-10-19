@@ -107,7 +107,7 @@ export const BatchRenderProgressModal: React.FC<BatchRenderProgressModalProps> =
                             background: 'rgba(245, 158, 11, 0.18)',
                             border: '1px solid rgba(245, 158, 11, 0.5)',
                             borderRadius: '4px',
-                            color: '#fbbf24',
+                            color: 'var(--warning)',
                             fontSize: '0.68rem',
                             fontWeight: 700,
                             padding: '2px 8px',
@@ -124,7 +124,7 @@ export const BatchRenderProgressModal: React.FC<BatchRenderProgressModalProps> =
                       <span
                         style={{
                           fontSize: '0.68rem',
-                          color: '#fca5a5',
+                          color: 'var(--danger)',
                           maxWidth: '320px',
                           lineHeight: '1.3',
                           textAlign: 'right',
