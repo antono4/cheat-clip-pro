@@ -28,6 +28,7 @@ from backend.services.render_service import (
     process_batch_rendering,
     process_batch_retry,
 )
+from backend.utils.text import safe_filename
 
 router = APIRouter(tags=["Render"])
 
@@ -220,7 +221,10 @@ def download_batch_zip(batch_id: str):
                             c_out = str(EXPORTS_DIR / fname)
                         if c_out and os.path.exists(c_out):
                             raw_title = (c.get("title") or "").strip()
-                            clean_title = re.sub(r'[\\/*?:"<>|]', "", raw_title) or os.path.splitext(os.path.basename(c_out))[0]
+                            clean_title = safe_filename(
+                                raw_title,
+                                fallback=os.path.splitext(os.path.basename(c_out))[0],
+                            )
                             count = title_counts.get(clean_title, 0)
                             title_counts[clean_title] = count + 1
                             arc_name = f"{clean_title}.mp4" if count == 0 else f"{clean_title} ({count}).mp4"

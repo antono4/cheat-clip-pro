@@ -187,6 +187,7 @@ export const id: Translations = {
     hookLabel: (hook: string) => `🪝 Hook: ${hook}`,
     viralityBadge: (score: number) => `${score}% Viralitas`,
     markedBadge: "✓ DITANDAI",
+    markClipLabel: "Tandai klip ini",
     copyTitleTooltip: "Salin Judul ke clipboard",
     copyCaptionTooltip: "Salin Keterangan ke clipboard",
     copyTimestampTooltip: "Salin timestamp klip ini ke clipboard",

@@ -185,6 +185,7 @@ export const en = {
     hookLabel: (hook: string) => `🪝 Hook: ${hook}`,
     viralityBadge: (score: number) => `${score}% Virality`,
     markedBadge: "✓ MARKED",
+    markClipLabel: "Mark this clip",
     copyTitleTooltip: "Copy Title to clipboard",
     copyCaptionTooltip: "Copy Caption to clipboard",
     copyTimestampTooltip: "Copy this clip's timestamp to clipboard",

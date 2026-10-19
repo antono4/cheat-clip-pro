@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../locales';
+import { useModalA11y } from '../utils/useModalA11y';
 import type { BatchRenderProgress } from '../types';
 
 interface BatchRenderProgressModalProps {
@@ -16,6 +17,7 @@ export const BatchRenderProgressModal: React.FC<BatchRenderProgressModalProps> =
   onRetryClip,
 }) => {
   const { t } = useLanguage();
+  const cardRef = useModalA11y(isOpen, onClose, t.batchProgress.modalTitle);
   if (!isOpen || !progress) return null;
 
   const isAllDone = progress.overall_status === 'completed' || progress.overall_status === 'error';
@@ -25,7 +27,7 @@ export const BatchRenderProgressModal: React.FC<BatchRenderProgressModalProps> =
 
   return (
     <div className="modal-backdrop">
-      <div className="batch-progress-card" onClick={e => e.stopPropagation()}>
+      <div ref={cardRef} tabIndex={-1} className="batch-progress-card" onClick={e => e.stopPropagation()}>
         <div className="batch-progress-header">
           <div>
             <h3>{t.batchProgress.modalTitle}</h3>

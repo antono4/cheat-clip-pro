@@ -3942,7 +3942,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                         letterSpacing: '0.02em',
                         whiteSpace: 'pre-line',
                         textAlign: 'center',
-                        color: 'var(--text-primary)',
+                        color: 'var(--on-dark-text)',
                         fontWeight: 800,
                         textShadow: '0 0 2px #000, 0 1px 3px rgba(0,0,0,0.95), 0 0 5px rgba(0,0,0,0.8)',
                         background: 'transparent',
@@ -4000,37 +4000,37 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                     >
                       {captionStyle === 'viral_pop' && (
                         <>
-                          <span style={{ color: 'var(--text-primary)' }}>{applyLetterCase('VIRAL', textCase)}</span>{' '}
+                          <span style={{ color: 'var(--on-dark-text)' }}>{applyLetterCase('VIRAL', textCase)}</span>{' '}
                           <span style={{ color: '#FFE600' }}>{applyLetterCase('POP', textCase)}</span>
                         </>
                       )}
                       {captionStyle === 'beast_punch' && (
                         <>
-                          <span style={{ color: 'var(--text-primary)' }}>{applyLetterCase('UNREAL', textCase)}</span>{' '}
+                          <span style={{ color: 'var(--on-dark-text)' }}>{applyLetterCase('UNREAL', textCase)}</span>{' '}
                           <span style={{ color: '#00FF66' }}>{applyLetterCase('HACK', textCase)}</span>
                         </>
                       )}
                       {captionStyle === 'cyber_violet' && (
                         <>
-                          <span style={{ color: 'var(--text-primary)' }}>{applyLetterCase('CYBER', textCase)}</span>{' '}
+                          <span style={{ color: 'var(--on-dark-text)' }}>{applyLetterCase('CYBER', textCase)}</span>{' '}
                           <span style={{ color: '#D946EF' }}>{applyLetterCase('PUNCH', textCase)}</span>
                         </>
                       )}
                       {captionStyle === 'fire_red' && (
                         <>
-                          <span style={{ color: 'var(--text-primary)' }}>{applyLetterCase('HOT', textCase)}</span>{' '}
+                          <span style={{ color: 'var(--on-dark-text)' }}>{applyLetterCase('HOT', textCase)}</span>{' '}
                           <span style={{ color: '#FF2E2E' }}>{applyLetterCase('FIRE', textCase)}</span>
                         </>
                       )}
                       {captionStyle === 'electric_cyan' && (
                         <>
-                          <span style={{ color: 'var(--text-primary)' }}>{applyLetterCase('ELECTRIC', textCase)}</span>{' '}
+                          <span style={{ color: 'var(--on-dark-text)' }}>{applyLetterCase('ELECTRIC', textCase)}</span>{' '}
                           <span style={{ color: '#00F0FF' }}>{applyLetterCase('CYAN', textCase)}</span>
                         </>
                       )}
                       {captionStyle === 'golden_aura' && (
                         <>
-                          <span style={{ color: 'var(--text-primary)' }}>{applyLetterCase('GOLDEN', textCase)}</span>{' '}
+                          <span style={{ color: 'var(--on-dark-text)' }}>{applyLetterCase('GOLDEN', textCase)}</span>{' '}
                           <span style={{ color: '#FFB800' }}>{applyLetterCase('MOMENT', textCase)}</span>
                         </>
                       )}
@@ -4090,7 +4090,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
             {/* Hidden Audio element for background music preview */}
             <audio
               ref={bgmAudioRef}
-              src={bgmAudioUrl}
+              src={bgmAudioUrl || undefined}
               onEnded={() => setIsBgmPlaying(false)}
               onLoadedMetadata={handleBgmLoadedMetadata}
               style={{ display: 'none' }}
@@ -4099,7 +4099,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
             {/* Hidden Audio element for hook sound effect preview */}
             <audio
               ref={hookSfxAudioRef}
-              src={hookSfxAudioUrl}
+              src={hookSfxAudioUrl || undefined}
               onEnded={() => setIsHookSfxPlaying(false)}
               style={{ display: 'none' }}
             />

@@ -42,7 +42,7 @@
 
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-muted: #78849c;
 
   --tint: 255, 255, 255;
   --ink-contrast: #ffffff;     /* Text on vibrant brand surfaces stays white */
@@ -114,6 +114,7 @@
    * stay bright in both themes because the surface behind them is always dark. */
   --on-dark-muted: #cbd5e1;
   --on-dark-subtle: #94a3b8;
+  --on-dark-text: #ffffff;
   --on-dark-danger: #f87171;
   --on-dark-info: #38bdf8;
   --on-dark-success: #4ade80;
@@ -131,7 +132,7 @@
 
   --text-primary: #0f172a;
   --text-secondary: #4b5670;
-  --text-muted: #6b7690;
+  --text-muted: #667089;
 
   --tint: 15, 23, 42;
   --ink-contrast: #ffffff;
@@ -207,11 +208,32 @@ body {
   background-attachment: fixed;
   min-height: 100vh;
   color: var(--text-primary);
-  min-width: 1200px;
+  /* Desktop-first canvas: the layout is designed for >=1024px. Smaller screens
+     scale-to-fit via the viewport meta, so this floor must stay >= 1024 to
+     avoid clipping (see index.html). */
+  min-width: 1024px;
 }
 
 #root {
-  min-width: 1200px;
+  min-width: 1024px;
+}
+
+/* Keyboard focus must always be visible, even where a component clears the
+   default outline. :focus-visible keeps the ring off for mouse users. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Custom Scrollbar */

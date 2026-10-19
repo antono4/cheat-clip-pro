@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../locales';
 import { resilientFetch } from '../utils/api';
+import { useModalA11y } from '../utils/useModalA11y';
 
 export interface VideoGeneratorModalProps {
   onClose: () => void;
@@ -369,9 +370,13 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
     marginBottom: '0.35rem',
   };
 
+  const cardRef = useModalA11y(true, onClose, v.title);
+
   return (
     <div className="custom-confirm-modal-overlay" onClick={onClose}>
       <div
+        ref={cardRef}
+        tabIndex={-1}
         className="custom-confirm-modal-card"
         style={{ maxWidth: '760px', width: '92vw', maxHeight: '90vh', overflowY: 'auto', textAlign: 'left' }}
         onClick={(e) => e.stopPropagation()}

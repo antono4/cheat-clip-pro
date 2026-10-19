@@ -4,10 +4,10 @@ These tests put a fake ``yt-dlp`` executable first on ``PATH``. The fake records
 its own argv and exits non-zero, so the real code path runs (real subprocess
 invocation, real argument building) without touching the network.
 
-The fake is a POSIX ``#!/bin/sh`` script, which Windows cannot execute; the
-three end-to-end shim tests are therefore skipped on Windows. The
-executable-resolution behaviour that matters on Windows is covered separately by
-``test_base_cmd_resolves_executable_path``.
+The fake is a POSIX ``#!/bin/sh`` script on POSIX and a ``yt-dlp.cmd`` shim that
+forwards to a Python script on Windows, so the same three tests run on both
+platforms. The Windows shim also covers the console-shim resolution that
+``get_yt_dlp_base_cmd`` has to handle.
 """
 
 import os
@@ -31,10 +31,29 @@ _FAKE_YTDLP = """#!/bin/sh
 exit 1
 """
 
-_posix_only = pytest.mark.skipif(
-    os.name == "nt",
-    reason="the yt-dlp fake is an extensionless #!/bin/sh script, which Windows cannot execute",
-)
+_FAKE_YTDLP_PY = """import os
+import sys
+
+with open(os.environ["FAKE_YTDLP_LOG"], "a", encoding="utf-8") as fh:
+    fh.write("ARGS" + "".join("\\t" + a for a in sys.argv[1:]) + "\\n")
+sys.exit(1)
+"""
+
+
+def _install_windows_fake(bin_dir, tmp_path):
+    """Build a real ``yt-dlp.exe`` launcher, like the one pip installs.
+
+    A ``.cmd`` shim cannot be used here: ``cmd.exe`` re-parses its arguments, so
+    the ``|`` separators in ``--progress-template`` never reach yt-dlp. Using a
+    genuine executable also exercises the resolution path production relies on.
+    """
+    scripts = pytest.importorskip("pip._vendor.distlib.scripts")
+    src = tmp_path / "_fake_src"
+    src.mkdir()
+    (src / "yt-dlp").write_text("#!/usr/bin/env python\n" + _FAKE_YTDLP_PY)
+    maker = scripts.ScriptMaker(str(src), str(bin_dir))
+    maker.executable = sys.executable
+    maker.make("yt-dlp")
 
 
 @pytest.fixture()
@@ -42,9 +61,12 @@ def fake_ytdlp(tmp_path, monkeypatch):
     """Installs a recording fake yt-dlp on PATH and returns a call reader."""
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
-    binary = bin_dir / "yt-dlp"
-    binary.write_text(_FAKE_YTDLP)
-    binary.chmod(binary.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    if os.name == "nt":
+        _install_windows_fake(bin_dir, tmp_path)
+    else:
+        binary = bin_dir / "yt-dlp"
+        binary.write_text(_FAKE_YTDLP)
+        binary.chmod(binary.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
     log_path = tmp_path / "ytdlp.log"
     monkeypatch.setenv("FAKE_YTDLP_LOG", str(log_path))
@@ -62,7 +84,6 @@ def fake_ytdlp(tmp_path, monkeypatch):
     return read_calls
 
 
-@_posix_only
 def test_clip_segment_uses_cookies_then_falls_back_to_guest(fake_ytdlp):
     with pytest.raises(RuntimeError):
         video_engine.download_clip_segment(URL, 10.0, 20.0, "cookie_probe_clip.mp4", COOKIES)
@@ -80,7 +101,6 @@ def test_clip_segment_uses_cookies_then_falls_back_to_guest(fake_ytdlp):
     assert "--cookies" not in calls[-1]
 
 
-@_posix_only
 def test_clip_segment_without_cookies_never_passes_cookies(fake_ytdlp):
     with pytest.raises(RuntimeError):
         video_engine.download_clip_segment(URL, 10.0, 20.0, "nocookie_probe_clip.mp4", None)
@@ -90,7 +110,6 @@ def test_clip_segment_without_cookies_never_passes_cookies(fake_ytdlp):
     assert not any("--cookies" in c for c in calls)
 
 
-@_posix_only
 def test_full_raw_video_uses_cookies_then_falls_back_to_guest(fake_ytdlp, tmp_path):
     with pytest.raises(RuntimeError):
         video_engine.download_full_raw_video(
@@ -110,7 +129,7 @@ def test_base_cmd_resolves_executable_path(monkeypatch):
     pip-installed .cmd/.bat shim raises WinError 2 unless the resolved path is
     handed to subprocess. This asserts the resolved path is used verbatim.
     """
-    resolved = os.path.join(os.path.dirname(sys.executable), "yt-dlp-shim")
+    resolved = os.path.join(os.path.dirname(sys.executable), "yt-dlp.exe")
 
     def fake_which(name):
         return resolved if name == "yt-dlp" else None
@@ -122,6 +141,24 @@ def test_base_cmd_resolves_executable_path(monkeypatch):
     assert cmd[0] == resolved, "the resolved yt-dlp path must be used as argv[0]"
     assert cmd[1:3] == ["--extractor-args", "youtube:player_client=default,web_embedded,ios"]
     assert "--force-ipv4" in cmd
+
+
+def test_base_cmd_avoids_shell_shim_that_mangles_arguments(monkeypatch):
+    """A .cmd/.bat shim must not be used as argv[0].
+
+    cmd.exe re-parses the arguments of a batch shim, so the ``|`` separators in
+    ``--progress-template`` are swallowed and the download silently produces no
+    output. The module invocation passes argv through untouched instead.
+    """
+    shim = os.path.join(os.path.dirname(sys.executable), "yt-dlp.cmd")
+    monkeypatch.setattr(
+        video_engine.shutil, "which", lambda name: shim if name == "yt-dlp" else None
+    )
+
+    cmd = video_engine.get_yt_dlp_base_cmd(include_cookies=False)
+
+    assert cmd[:2] == [sys.executable, "-m"], "a batch shim must fall back to the module"
+    assert cmd[2] == "yt_dlp"
 
 
 def test_base_cmd_falls_back_to_python_module(monkeypatch):

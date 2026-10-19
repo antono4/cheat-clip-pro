@@ -23,11 +23,12 @@ export const ThemeSwitcher: React.FC = () => {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '4px 10px',
+    padding: '6px 10px',
     fontSize: '0.75rem',
     fontWeight: 600,
     border: 'none',
     borderRadius: '16px',
+    minHeight: '24px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   };

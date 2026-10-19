@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../locales';
+import { useModalA11y } from '../utils/useModalA11y';
 import type {
   ViralClip,
   RenderSettings,
@@ -32,6 +33,7 @@ export const ClipStudioModal: React.FC<ClipStudioModalProps> = ({
   isRendering,
 }) => {
   const { t } = useLanguage();
+  const cardRef = useModalA11y(isOpen, onClose, t.studio.heading);
   // Default to marked clips if any, otherwise all clips
   const initialClips = markedClips.length > 0 ? markedClips : allClips.slice(0, 3);
   
@@ -123,7 +125,7 @@ export const ClipStudioModal: React.FC<ClipStudioModalProps> = ({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="studio-modal-card" onClick={e => e.stopPropagation()}>
+      <div ref={cardRef} tabIndex={-1} className="studio-modal-card" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="studio-modal-header">
           <div className="studio-header-title">
