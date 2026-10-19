@@ -370,6 +370,33 @@ def get_yt_dlp_cookies_args() -> List[str]:
     return []
 
 
+def get_download_proxy() -> Optional[str]:
+    """Proxy URL for YouTube downloads, from the same env vars the rest of the
+    backend uses. The environment is read directly so this module keeps its
+    light import surface (it is imported by tests without the full dep set)."""
+    for key in ("PROXY_URL", "WEBSHARE_PROXY", "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY"):
+        value = (os.environ.get(key) or "").strip()
+        if value:
+            return value
+
+    ws_user = (os.environ.get("WEBSHARE_USERNAME") or "").strip()
+    ws_pass = (os.environ.get("WEBSHARE_PASSWORD") or "").strip()
+    if ws_user and ws_pass:
+        user_clean = ws_user[:-7] if ws_user.endswith("-rotate") else ws_user
+        return f"http://{user_clean}-rotate:{ws_pass}@p.webshare.io:80"
+    return None
+
+
+def get_ffmpeg_proxy_args() -> List[str]:
+    """`-http_proxy` args for ffmpeg inputs that fetch a network URL directly.
+
+    Without this the direct-URL trimming fallback ignores the configured proxy
+    and gets a 403 from a datacenter IP, even though yt-dlp itself succeeds.
+    """
+    proxy = get_download_proxy()
+    return ["-http_proxy", proxy] if proxy else []
+
+
 def get_yt_dlp_base_cmd(
     include_cookies: bool = True,
     cookies_path: Optional[Union[str, Path]] = None,
@@ -408,6 +435,12 @@ def get_yt_dlp_base_cmd(
         "--extractor-args", "youtube:player_client=default,web_embedded,ios",
         "--force-ipv4"
     ])
+
+    # Route through the configured proxy. YouTube blocks datacenter IPs, and the
+    # transcript/metadata paths already honour these env vars, so downloads must too.
+    proxy = get_download_proxy()
+    if proxy:
+        cmd.extend(["--proxy", proxy])
 
     if cookies_path and Path(cookies_path).exists() and Path(cookies_path).stat().st_size > 0:
         logger.info(f"Using ephemeral YouTube cookies from: {cookies_path}")
@@ -858,6 +891,7 @@ def download_clip_segment(
                     trim_timeout = max(240, min(900, int(clip_duration * 4.5) + 60))
                     trim_cmd = [
                         "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                        *get_ffmpeg_proxy_args(),
                         "-reconnect", "1",
                         "-reconnect_at_eof", "1",
                         "-reconnect_streamed", "1",
@@ -997,6 +1031,15 @@ def download_clip_segment(
         raise RuntimeError("YouTube rejected the session cookies ('The page needs to be reloaded'). Your cookies.txt may have expired or need refreshing. Please re-export fresh cookies from an active YouTube tab using the 🍪 Cookies Manager button in the top navbar.")
     if "confirm you're not a bot" in err_lower or "sign in" in err_lower or "login" in err_lower:
         raise RuntimeError("YouTube blocked video download (Bot verification). Please import/save fresh YouTube cookies using the 🍪 Cookies Manager button in the top navbar.")
+    if "403" in err_lower or "forbidden" in err_lower:
+        raise RuntimeError(
+            "YouTube refused the download (HTTP 403 Forbidden). This usually means YouTube "
+            "flagged your network/IP address (common on servers, VPNs and datacenter hosts) or "
+            "the download URL expired. Fixes, in order: import fresh YouTube cookies via the "
+            "🍪 Cookies Manager button, set PROXY_URL / WEBSHARE_PROXY so downloads exit through "
+            "a residential IP, and make sure `yt-dlp-ejs` is installed so the YouTube JavaScript "
+            "challenge can be solved."
+        )
     if "timed out" in err_lower or "timeout" in err_lower:
         raise RuntimeError("Video download timed out due to slow internet connection or lag. You can retry this clip anytime.")
     raise RuntimeError(f"Failed to download video clip segment from YouTube ({last_err_snippet}). Check your internet connection or cookies.")
@@ -1103,7 +1146,13 @@ def download_full_raw_video(
             if use_cookies:
                 logger.warning(f"Full raw video download with cookies exited with code {returncode}. Retrying in guest mode...")
 
-    raise RuntimeError("Failed to download raw video. Please check your cookies or network connection.")
+    raise RuntimeError(
+        "Failed to download the raw video. YouTube may be blocking your network/IP address "
+        "(HTTP 403 is common on servers, VPNs and datacenter hosts), your cookies may be expired, "
+        "or `yt-dlp-ejs` may be missing so the YouTube JavaScript challenge cannot be solved. "
+        "Try importing fresh cookies via the 🍪 Cookies Manager button, or set PROXY_URL / "
+        "WEBSHARE_PROXY so downloads exit through a residential IP."
+    )
 
 
 def clean_caption_text(text: str) -> str:
