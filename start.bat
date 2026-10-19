@@ -6,7 +6,7 @@ title Cheat Clip PRO
 cd /d "%~dp0"
 
 echo ===================================================
-echo   Starting Cheat Clip PRO (Space & PATH Resilient)
+echo   Starting Cheat Clip PRO (Space ^& PATH Resilient)
 echo ===================================================
 
 :: If local venv exists, prepend its Scripts directory to PATH

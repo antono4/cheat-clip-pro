@@ -379,8 +379,13 @@ def get_yt_dlp_base_cmd(
     Tries standalone 'yt-dlp' executable first, then falls back to python module:
     [sys.executable, "-m", "yt_dlp"] which works 100% of the time if installed via pip.
     """
-    if shutil.which("yt-dlp"):
-        cmd = ["yt-dlp"]
+    # Resolve the full path so Windows can launch pip-installed console shims
+    # (yt-dlp.exe / yt-dlp.cmd). A bare "yt-dlp" name only works via CreateProcess
+    # PATH search for real executables; a .cmd shim raises WinError 2 unless the
+    # resolved path is passed to subprocess.
+    resolved = shutil.which("yt-dlp")
+    if resolved:
+        cmd = [resolved]
     else:
         try:
             import yt_dlp

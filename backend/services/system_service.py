@@ -223,16 +223,29 @@ def auto_cleanup_expired_files(
             except Exception as e:
                 logger.warning(f"Failed to unlink file during quota purge {item_path}: {e}")
 
-    # Remove empty subdirectories (skip root targets and frames)
+    # Remove empty subdirectories (skip root targets and frames).
+    # Never remove a target dir itself (e.g. temp_clips/uploads): it is a managed
+    # storage root that later uploads/render calls write into, and the cleanup
+    # worker cannot rely on it being recreated between runs.
+    managed_roots = {t.resolve() for t in target_dirs}
     for target in target_dirs:
         if target.exists() and target.is_dir():
             for item in sorted(list(target.rglob("*")), key=lambda p: len(p.parts), reverse=True):
-                if item.is_dir() and item != target and item.name != "frames" and not is_protected_system_file(item):
+                if item.is_dir() and item.name != "frames" and not is_protected_system_file(item):
                     try:
+                        if item.resolve() in managed_roots:
+                            continue
                         if not any(item.iterdir()):
                             item.rmdir()
                     except Exception:
                         pass
+
+    # Ensure every managed storage root still exists after cleanup.
+    for target in target_dirs:
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
 
     tot_cleaned_files = ttl_deleted_files + quota_deleted_files
     tot_cleaned_bytes = ttl_deleted_bytes + quota_deleted_bytes

@@ -101,6 +101,7 @@ async def upload_video(
     save_path = UPLOADS_DIR / unique_name
     
     try:
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
         bytes_written = await _save_uploaded_file_chunked(file, save_path, MAX_VIDEO_UPLOAD_BYTES)
         meta = await asyncio.to_thread(get_video_file_metadata, save_path)
         
