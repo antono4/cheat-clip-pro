@@ -1,4 +1,4 @@
-export { LanguageProvider } from './LanguageContext';
+export { LanguageProvider } from './LanguageProvider';
 export { useLanguage } from './useLanguage';
 export { getInitialLanguage, LANGUAGE_STORAGE_KEY, type Language } from './languageContext';
 export type { Translations } from './en';
