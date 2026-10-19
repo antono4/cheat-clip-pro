@@ -10,6 +10,7 @@ import {
   normalizeCookies,
 } from '../utils/cookieUtils';
 import { toErrorMessage } from '../utils/api';
+import { useModalA11y } from '../utils/useModalA11y';
 
 interface CookiesModalProps {
   isOpen: boolean;
@@ -68,6 +69,8 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  const cardRef = useModalA11y(isOpen, onClose, t.cookies.modalTitle);
 
   if (!isOpen) return null;
 
@@ -150,7 +153,12 @@ export const CookiesModal: React.FC<CookiesModalProps> = ({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="cookies-modal-card" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={cardRef}
+        tabIndex={-1}
+        className="cookies-modal-card"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="studio-modal-header">
           <div className="studio-header-title">

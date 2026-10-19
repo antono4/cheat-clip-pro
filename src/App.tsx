@@ -2542,7 +2542,7 @@ Transcript:
           {/* YouTube input mode */}
           {sourceMode === 'youtube' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.form.urlLabel}</label>
+              <label htmlFor="youtube-url-input" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.form.urlLabel}</label>
               <div className="form-main-input-row" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <input
                   id="youtube-url-input"
@@ -2585,7 +2585,7 @@ Transcript:
           {/* Google Drive input mode */}
           {sourceMode === 'gdrive' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.form.gdriveUrlLabel}</label>
+              <label htmlFor="gdrive-url-input" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.form.gdriveUrlLabel}</label>
               <div className="form-main-input-row" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <input
                   id="gdrive-url-input"
@@ -2838,7 +2838,7 @@ Transcript:
               
               {/* API Key input — required */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                <label htmlFor="gemini-key-input" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   <span>
                     {t.form.apiKeyLabel}
                     <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--danger)', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', padding: '0.1rem 0.35rem', letterSpacing: '0.04em' }}>{t.form.apiKeyRequired}</span>
@@ -2887,7 +2887,7 @@ Transcript:
 
               {/* AI Model Selection */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                <label htmlFor="ai-model-select" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   <span>{t.form.aiModelLabel}</span>
                   {loadingModels && (
                     <span style={{ fontSize: '0.72rem', color: 'var(--primary)', animation: 'pulse 1.5s infinite ease-in-out' }}>
@@ -2896,6 +2896,7 @@ Transcript:
                   )}
                 </label>
                 <select
+                  id="ai-model-select"
                   className="form-input"
                   value={selectedModel}
                   onChange={(e) => {
@@ -3005,10 +3006,11 @@ Transcript:
 
               {/* Focus Prompt Search Keyword */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                <label htmlFor="custom-prompt-input" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   {t.form.findSpecificMoments} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 400 }}>{t.form.optional}</span>
                 </label>
                 <input
+                  id="custom-prompt-input"
                   type="text"
                   className="form-input"
                   placeholder={t.form.promptPlaceholder}
@@ -3295,6 +3297,7 @@ Transcript:
                 <input
                   type="text"
                   className="history-search-input"
+                  aria-label={t.form.searchHistoryPlaceholder}
                   placeholder={t.form.searchHistoryPlaceholder}
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
@@ -3483,7 +3486,7 @@ Transcript:
                         {/* Thumbnail with overlay duration badge */}
                         <div style={{ position: 'relative', flexShrink: 0 }}>
                           <img
-                            src={entry.thumbnail}
+                            src={entry.thumbnail || undefined}
                             alt=""
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="84" height="48" viewBox="0 0 84 48"><rect width="84" height="48" fill="%231e1e2d"/><polygon points="36,18 52,24 36,30" fill="%236366f1"/></svg>';
@@ -4211,14 +4214,15 @@ Transcript:
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, overflow: 'hidden' }}>
                           <input
                             type="checkbox"
+                            aria-label={t.results.markClipLabel}
                             checked={isMarked}
                             onChange={(e) => {
                               e.stopPropagation();
                               toggleMarkedClip(clipKey);
                             }}
                             style={{
-                              width: '14px',
-                              height: '14px',
+                              width: '18px',
+                              height: '18px',
                               cursor: 'pointer',
                               accentColor: 'var(--secondary)'
                             }}
@@ -4333,6 +4337,7 @@ Transcript:
                 <input
                   type="text"
                   className="form-input search-filter-input"
+                  aria-label={t.results.searchPlaceholder}
                   placeholder={t.results.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -4468,6 +4473,7 @@ Transcript:
                         <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.25rem' }}>
                           <input
                             type="checkbox"
+                            aria-label={t.results.markClipLabel}
                             checked={!!markedClips[`${clip.start_time}_${clip.end_time}`]}
                             onChange={(e) => {
                               e.stopPropagation();

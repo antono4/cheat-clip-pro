@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../locales';
 import { toErrorMessage } from '../utils/api';
+import { useModalA11y } from '../utils/useModalA11y';
 
 export interface VersionInfo {
   current_commit: string;
@@ -25,6 +26,7 @@ interface AppUpdateModalProps {
 
 export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose }) => {
   const { t } = useLanguage();
+  const cardRef = useModalA11y(isOpen, onClose, t.updateModal.title);
   const [info, setInfo] = useState<VersionInfo | null>(null);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
@@ -205,6 +207,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
       }}
     >
       <div
+        ref={cardRef}
+        tabIndex={-1}
         className="glass-panel"
         style={{
           width: '100%',

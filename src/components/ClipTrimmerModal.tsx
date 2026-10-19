@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useLanguage } from '../locales';
 import type { ViralClip, TranscriptLine } from '../types';
+import { useModalA11y } from '../utils/useModalA11y';
 
 interface ClipTrimmerModalProps {
   isOpen: boolean;
@@ -588,11 +589,15 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
     }
   };
 
+  const cardRef = useModalA11y(isOpen, onClose, t.trimmer.modalTitle);
+
   if (!isOpen || !clip) return null;
 
   return (
     <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 10000, padding: '1rem' }}>
       <div
+        ref={cardRef}
+        tabIndex={-1}
         className="studio-modal-card clip-trimmer-modal"
         onClick={(e) => e.stopPropagation()}
         style={{
