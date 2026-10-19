@@ -216,6 +216,46 @@ def test_webshare_credentials_synthesize_a_rotating_proxy(no_proxy_env, monkeypa
     )
 
 
+def test_js_runtime_prefers_deno_then_node(monkeypatch):
+    monkeypatch.setattr(video_engine.shutil, "which", lambda name: f"/usr/bin/{name}")
+
+    assert video_engine.get_js_runtime() == "deno"
+
+
+def test_js_runtime_falls_back_to_node(monkeypatch):
+    monkeypatch.setattr(
+        video_engine.shutil, "which", lambda name: "/usr/bin/node" if name == "node" else None
+    )
+
+    assert video_engine.get_js_runtime() == "node"
+
+
+def test_js_runtime_is_none_when_no_runtime_installed(monkeypatch):
+    monkeypatch.setattr(video_engine.shutil, "which", lambda name: None)
+
+    assert video_engine.get_js_runtime() is None
+
+
+def test_base_cmd_passes_the_detected_js_runtime(no_proxy_env, monkeypatch):
+    """yt-dlp needs a runtime to solve YouTube's `n` challenge; without the
+    flag it silently omits formats and the download later 403s."""
+    monkeypatch.setattr(
+        video_engine.shutil, "which", lambda name: "/usr/bin/node" if name == "node" else None
+    )
+
+    cmd = video_engine.get_yt_dlp_base_cmd(include_cookies=False)
+
+    assert cmd[cmd.index("--js-runtimes") + 1] == "node"
+
+
+def test_base_cmd_omits_js_runtime_flag_when_none_available(no_proxy_env, monkeypatch):
+    monkeypatch.setattr(video_engine.shutil, "which", lambda name: None)
+
+    cmd = video_engine.get_yt_dlp_base_cmd(include_cookies=False)
+
+    assert "--js-runtimes" not in cmd
+
+
 def test_forbidden_error_is_actionable(no_proxy_env, fake_ytdlp, monkeypatch):
     """A 403 must not surface as the generic 'check your internet' message."""
     def fake_run(cmd, **kwargs):
@@ -231,4 +271,7 @@ def test_forbidden_error_is_actionable(no_proxy_env, fake_ytdlp, monkeypatch):
     message = str(excinfo.value)
     assert "403" in message
     assert "PROXY_URL" in message
-    assert "yt-dlp-ejs" in message
+    # yt-dlp-ejs ships with requirements.txt, so the actionable lever is a
+    # JavaScript runtime; the old wording told users to reinstall the package.
+    assert "Node.js" in message
+    assert "Deno" in message

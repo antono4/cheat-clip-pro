@@ -15,6 +15,7 @@ from backend.config import (
     TEMP_DIR,
     UPLOADS_DIR,
     compute_audio_energy_heatmap,
+    get_js_runtime,
     get_video_file_metadata,
     logger,
     transcribe_local_video_file,
@@ -189,6 +190,7 @@ def health_check(refresh: bool = False):
     is_vercel = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
     keys = get_supadata_keys()
     proxy = get_proxy_url()
+    js_runtime = get_js_runtime()
     has_gemini = bool(os.environ.get("GEMINI_API_KEY"))
     supadata_info = get_supadata_usage_data(force=refresh) if keys else {
         "total_keys": 0,
@@ -208,6 +210,7 @@ def health_check(refresh: bool = False):
         "is_server": is_server_environment(),
         "allow_app_updates": is_update_allowed(),
         "proxy_configured": bool(proxy),
+        "js_runtime": js_runtime,
         "gemini_env_configured": has_gemini,
         "kimi_env_configured": bool(os.environ.get("MOONSHOT_API_KEY") or os.environ.get("KIMI_API_KEY")),
         "supadata_keys_count": len(keys),

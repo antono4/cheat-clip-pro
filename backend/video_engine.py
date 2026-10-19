@@ -424,6 +424,19 @@ def _resolve_yt_dlp_cmd() -> List[str]:
     return [sys.executable, "-m", "yt_dlp"]
 
 
+def get_js_runtime() -> Optional[str]:
+    """JavaScript runtime yt-dlp can use to solve YouTube's `n` challenge.
+
+    `yt-dlp-ejs` ships the solver scripts, but they still need a runtime to
+    execute. Without one yt-dlp silently omits formats and the download later
+    dies with an opaque 403, so callers surface this explicitly.
+    """
+    for runtime in ("deno", "node"):
+        if shutil.which(runtime):
+            return runtime
+    return None
+
+
 def get_yt_dlp_base_cmd(
     include_cookies: bool = True,
     cookies_path: Optional[Union[str, Path]] = None,
@@ -440,10 +453,15 @@ def get_yt_dlp_base_cmd(
     cmd = list(_resolve_yt_dlp_cmd())
 
     # Prefer deno (fast challenge solver for modern YouTube player), then node
-    if shutil.which("deno"):
-        cmd.extend(["--js-runtimes", "deno"])
-    elif shutil.which("node"):
-        cmd.extend(["--js-runtimes", "node"])
+    runtime = get_js_runtime()
+    if runtime:
+        cmd.extend(["--js-runtimes", runtime])
+    else:
+        logger.warning(
+            "No Deno or Node.js runtime found on PATH. yt-dlp cannot solve YouTube's "
+            "JavaScript challenge, so some formats are omitted and downloads may fail "
+            "with HTTP 403. Install Deno or Node.js to fix this."
+        )
 
     # Prevent 'The page needs to be reloaded. Please try again later.'
     # by allowing yt-dlp to fall back from default/tv_downgraded to web_embedded and ios client APIs.
@@ -1053,8 +1071,8 @@ def download_clip_segment(
             "flagged your network/IP address (common on servers, VPNs and datacenter hosts) or "
             "the download URL expired. Fixes, in order: import fresh YouTube cookies via the "
             "🍪 Cookies Manager button, set PROXY_URL / WEBSHARE_PROXY so downloads exit through "
-            "a residential IP, and make sure `yt-dlp-ejs` is installed so the YouTube JavaScript "
-            "challenge can be solved."
+            "a residential IP, and make sure a JavaScript runtime (Deno or Node.js) is on PATH "
+            "so yt-dlp can solve YouTube's challenge (`yt-dlp-ejs` ships with requirements.txt)."
         )
     if "timed out" in err_lower or "timeout" in err_lower:
         raise RuntimeError("Video download timed out due to slow internet connection or lag. You can retry this clip anytime.")
@@ -1165,7 +1183,8 @@ def download_full_raw_video(
     raise RuntimeError(
         "Failed to download the raw video. YouTube may be blocking your network/IP address "
         "(HTTP 403 is common on servers, VPNs and datacenter hosts), your cookies may be expired, "
-        "or `yt-dlp-ejs` may be missing so the YouTube JavaScript challenge cannot be solved. "
+        "or no JavaScript runtime (Deno or Node.js) is on PATH so yt-dlp cannot solve YouTube's "
+        "challenge (`yt-dlp-ejs` ships with requirements.txt). "
         "Try importing fresh cookies via the 🍪 Cookies Manager button, or set PROXY_URL / "
         "WEBSHARE_PROXY so downloads exit through a residential IP."
     )

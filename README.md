@@ -59,10 +59,14 @@ The whole UI ships in two themes — toggle **Dark / Light** in the header (your
 | Tool | Version | Notes |
 | --- | --- | --- |
 | [Git](https://git-scm.com/) | any | |
-| [Node.js](https://nodejs.org/) | 18+ | |
+| [Node.js](https://nodejs.org/) | 18+ | also runs yt-dlp's YouTube challenge solver |
 | [Python](https://www.python.org/) | 3.10+ | 3.11 recommended |
 | [FFmpeg](https://ffmpeg.org/) | any | **Must include the `libass` subtitle filter** |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | recent | |
+
+> Node.js is used twice: to build the frontend, and as the JavaScript runtime that
+> solves YouTube's `n` challenge during downloads. If you install Deno instead,
+> that works too — the backend prefers Deno when both are present.
 
 Install FFmpeg and yt-dlp:
 
@@ -308,12 +312,11 @@ FFmpeg was built without the `libass` subtitle filter. On macOS run `brew instal
 YouTube is throttling unauthenticated downloads. Click the 🍪 **Cookies** button, export your cookies with a browser extension such as *Get cookies.txt locally*, and paste them into the app to unlock 1080p downloads.
 
 **`Failed to download video clip segment from YouTube` / `HTTP error 403 Forbidden`**
-YouTube refused the media URL. Two causes, in order of likelihood:
+YouTube refused the media URL. Three causes, in order of likelihood:
 
 1. **Your IP is flagged.** Datacenter, cloud, VPN and some shared connections are blocked outright, and no cookie fixes it. Set `PROXY_URL` (or `WEBSHARE_PROXY`, or `WEBSHARE_USERNAME`/`WEBSHARE_PASSWORD`) in `backend/.env` so downloads exit through a residential IP, then restart the backend. Downloads, metadata and transcripts all use the same proxy.
 2. **Stale cookies.** Import fresh YouTube cookies with the 🍪 **Cookies Manager** button.
-
-A missing JavaScript challenge solver also causes `403`, and shows a `n challenge solving failed` warning. `yt-dlp-ejs` is now a declared dependency, so `pip install -r requirements.txt` installs it; a Node.js or Deno runtime on `PATH` is used to run the solver.
+3. **No JavaScript runtime.** yt-dlp has to run YouTube's `n` challenge in a JavaScript runtime, and **Deno or Node.js must be on `PATH`** — that is what solves the challenge. `yt-dlp-ejs` (the solver scripts) ships with `requirements.txt`, so reinstalling it changes nothing; the missing piece is the runtime. Without one yt-dlp omits formats and logs `n challenge solving failed`, and the download fails with `403`. Install [Deno](https://deno.land/) (`winget install DenoLand.Deno`, `brew install deno`, or `curl -fsSL https://deno.land/install.sh | sh`) or Node.js, then restart the backend. Check `GET /api/health` — it reports the detected `js_runtime` (`null` means none was found).
 
 If only *some* clips fail, retry — YouTube URLs expire after a few minutes, so a long batch can outlive the links it was given.
 
