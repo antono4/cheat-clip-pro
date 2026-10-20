@@ -374,17 +374,27 @@ def get_current_git_info() -> dict:
     }
 
 
-def trigger_detached_restart(delay: float = 2.5):
-    """Launches backend/restart_runner.py in a fully detached background process."""
+def trigger_detached_restart(delay: float = 2.5, update: bool = False, branch: str = "master"):
+    """Launches backend/restart_runner.py in a fully detached background process.
+
+    When ``update`` is true the runner pulls ``branch`` and syncs dependencies
+    *after* the current response has been delivered. The pull cannot happen here:
+    it rewrites files under ``backend/``, which the uvicorn ``--reload`` watcher
+    would use to restart the worker mid-request (surfacing as "Failed to fetch").
+    """
     root_dir = Path(_base_dir).parent
     runner_script = root_dir / "backend" / "restart_runner.py"
-    
+
+    command = [sys.executable, str(runner_script), "--delay", str(delay), "--cwd", str(root_dir)]
+    if update:
+        command += ["--update", "--branch", branch or "master"]
+
     flags = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS) if os.name == 'nt' else 0
     subprocess.Popen(
-        [sys.executable, str(runner_script), "--delay", str(delay), "--cwd", str(root_dir)],
+        command,
         cwd=str(root_dir),
         creationflags=flags,
         start_new_session=True if os.name != 'nt' else False,
         close_fds=True
     )
-    logger.info(f"Detached restart runner spawned with delay={delay}s")
+    logger.info(f"Detached restart runner spawned with delay={delay}s (update={update})")

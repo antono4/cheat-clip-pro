@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../locales';
-import { toErrorMessage } from '../utils/api';
+import { requestAppUpdate, toErrorMessage } from '../utils/api';
 import { useModalA11y } from '../utils/useModalA11y';
 
 export interface VersionInfo {
@@ -154,21 +154,19 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({ isOpen, onClose 
     setErrorMessage(null);
     setStatusText(t.updateModal.updatingApp);
 
-    try {
-      const res = await fetch('/api/system/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.detail || data.message || 'Update failed');
-      }
-      setIsUpdating(false);
-      startPollingReconnect();
-    } catch (err: unknown) {
-      setIsUpdating(false);
-      setErrorMessage(toErrorMessage(err, 'Error executing update'));
+    const outcome = await requestAppUpdate();
+    setIsUpdating(false);
+
+    if (outcome.status === 'error') {
+      setErrorMessage(outcome.message);
+      return;
     }
+    if (outcome.status === 'up-to-date') {
+      setStatusText(t.updateModal.upToDateTitle);
+      await handleCheckUpdate();
+      return;
+    }
+    startPollingReconnect();
   };
 
   const handleDirectRestart = async () => {
