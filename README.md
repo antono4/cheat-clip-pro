@@ -329,6 +329,16 @@ Yes — AMD (`h264_amf`), Intel (`h264_qsv`), and Apple/CPU (`libx264`) are all 
 **The page is blank / white after `npm run dev` (Windows or macOS)**
 A module import resolved to the wrong file because of a case-insensitive filesystem. Vite tries `.ts` before `.tsx`, so if two modules differ only by letter case the browser loads the wrong one and the app never mounts. The fix already shipped: context providers live in `LanguageProvider.tsx` / `ThemeProvider.tsx`. If you add modules, keep filenames unique regardless of case — `npm run test` runs a guard that fails on case-only collisions. See the browser console for `does not provide an export named` errors.
 
+**`[PARSE_ERROR] Encountered diff marker` in the Vite overlay**
+A leftover Git conflict marker (`<<<<<<<`, `=======`, `>>>>>>>`) is in a source file — usually the remains of an interrupted `git stash pop`, `git pull --rebase --autostash`, or a half-finished merge. Detect and repair it with the bundled helper:
+
+```bash
+npm run fix-conflicts          # list the offending files and lines (dry run)
+npm run fix-conflicts -- --fix # back up local edits, then reset to origin/master
+```
+
+The `--fix` run first saves your current working tree on a `backup/pre-conflict-fix-<timestamp>` branch, so nothing is lost; delete that branch once you no longer need it. To repair by hand instead, open the reported file and remove the three marker lines, keeping the version you want.
+
 ---
 
 ## 🧪 Tests
