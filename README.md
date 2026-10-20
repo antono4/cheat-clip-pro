@@ -339,6 +339,9 @@ npm run fix-conflicts -- --fix # back up local edits, then reset to origin/maste
 
 The `--fix` run first saves your current working tree on a `backup/pre-conflict-fix-<timestamp>` branch, so nothing is lost; delete that branch once you no longer need it. To repair by hand instead, open the reported file and remove the three marker lines, keeping the version you want.
 
+**The in-app Update & Restart shows `Failed to fetch`**
+The app pulls the latest code while it is running, which rewrites files under `backend/`. Older builds did that pull *inside* the request handler, so the dev backend's uvicorn `--reload` watcher restarted the worker before the response was sent, and the browser reported a dropped connection as `Failed to fetch`. The pull now runs in the detached restart runner after the response is delivered, and the UI treats a dropped connection during a restart as the normal "reconnecting" state rather than an error. If you still see it, update once from a terminal (`git pull && npm install`) and restart `npm run dev`; a genuine HTTP error (for example `403` in server mode) is still shown as a message.
+
 ---
 
 ## 🧪 Tests
