@@ -10,7 +10,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "fix-conflicts": "node scripts/fix-conflicts.js"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
