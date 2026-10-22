@@ -19,6 +19,42 @@ export function toErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+export type AppUpdateOutcome =
+  | { status: 'restarting' }
+  | { status: 'up-to-date' }
+  | { status: 'error'; message: string };
+
+/**
+ * Calls POST /api/system/update and classifies the outcome.
+ *
+ * A dropped connection is deliberately NOT reported as an error: the backend is
+ * restarting, so fetch() rejecting with "Failed to fetch" is the expected happy
+ * path, not a failure to show the user. Only a real HTTP error response (e.g.
+ * 403 in server mode, 500 when the remote is unreachable) is surfaced.
+ *
+ * The fetch implementation is injectable so this stays testable without a DOM.
+ */
+export async function requestAppUpdate(fetchImpl: typeof fetch = fetch): Promise<AppUpdateOutcome> {
+  try {
+    const res = await fetchImpl('/api/system/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data: Record<string, unknown> = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const detail = data.detail || data.message || 'Update failed';
+      return { status: 'error', message: String(detail) };
+    }
+    if (data.status === 'up-to-date') {
+      return { status: 'up-to-date' };
+    }
+    return { status: 'restarting' };
+  } catch {
+    // Connection dropped while the server restarted — treat as in-progress.
+    return { status: 'restarting' };
+  }
+}
+
 /**
  * Fetch wrapper with automatic retry on 502/503/504 or network connection errors.
  * Ideal for startup probes (/api/cookies, /api/hardware-accel, /api/models).
